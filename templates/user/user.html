@@ -43,19 +43,44 @@
             </div>
           </div>
           <!-- /Page Header -->
+           <!-- Filters -->
+<!-- div class="row mb-3">
+  <div class="col-md-3">
+    <label class="mb-1">Status</label>
+    <select id="statusFilter" class="form-control form-control-sm">
+      <option value="">All</option>
+      <option value="Active">Active</option>
+      <option value="Inactive">Inactive</option>
+    </select>
+  </div>
+
+  <div class="col-md-3">
+    <label class="mb-1">Role</label>
+    <select id="roleFilter" class="form-control form-control-sm">
+      <option value="">All</option>
+      {% for r in roles %}
+        <option value="{{ r.name }}">{{ r.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div> -->
+
 
           <!-- Users Table -->
           <div class="row">
             <div class="col-md-12">
               <div class="table-responsive">
-                <table class="table table-striped custom-table mb-0">
+                <table
+                  id="usersTable"
+                  class="table table-striped custom-table mb-0"
+                >
                   <thead>
                     <tr>
                       <th>ID</th>
                       <th>Username</th>
                       <th>Full Name</th>
                       <th>Email</th>
-                      <th>User Type</th>
+                      <th>Role</th>
                       <th>Status</th>
                       <th class="text-right">Action</th>
                     </tr>
@@ -67,7 +92,7 @@
                       <td>{{ row.username }}</td>
                       <td>{{ row.full_name }}</td>
                       <td>{{ row.email }}</td>
-                      <td>{{ row.user_type }}</td>
+                      <td>{{ row.role.name }}</td>
                       <td>
                         {% if row.is_active %}
                         <span class="badge bg-inverse-success">Active</span>
@@ -128,7 +153,11 @@
             </button>
           </div>
 
-<form id="addUserForm" method="POST" action="{{ url_for('user.add') }}">
+          <form
+            id="addUserForm"
+            method="POST"
+            action="{{ url_for('user.add') }}"
+          >
             {{ form.hidden_tag() }}
             <div class="modal-body">
               <div class="row">
@@ -155,8 +184,8 @@
 
                 <div class="col-sm-6">
                   <div class="form-group">
-                    {{ form.user_type.label }} {{
-                    form.user_type(class="form-control") }}
+                    {{ form.role_id.label }} {{
+                    form.role_id(class="form-control role-selec") }}
                   </div>
                 </div>
 
@@ -192,12 +221,17 @@
     <script src="{{ url_for('static', filename='assets/js/select2.min.js') }}"></script>
     <script src="{{ url_for('static', filename='assets/js/moment.min.js') }}"></script>
     <script src="{{ url_for('static', filename='assets/js/bootstrap-datetimepicker.min.js') }}"></script>
+    <!-- Vendor JS (COMPANY) -->
+<script src="{{ url_for('static', filename='assets/js/jquery.dataTables.min.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/dataTables.bootstrap4.min.js') }}"></script>
+
+<script src="{{ url_for('static', filename='assets/js/select2.min.js') }}"></script>
+
     <script src="{{ url_for('static', filename='assets/js/app.js') }}"></script>
-	<script src="{{ url_for('static', filename='assets/js/user.js') }}"></script>
-
-
+ 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-   
+    <script src="{{ url_for('static', filename='assets/js/user.js') }}"></script>
+
   </body>
 </html>

@@ -78,7 +78,8 @@
                             <button class="btn btn-primary submit-btn" type="submit">Update User</button>
                         </div>
                     </form> -->
-                    <form method="POST" action="{{ url_for('user.edit', user_id=data.id) }}">
+                    <form id="editUserForm"
+                     method="POST" action="{{ url_for('user.edit', user_id=data.id) }}">
     {{ form.hidden_tag() }}
 
     <div class="form-group">
@@ -106,8 +107,8 @@
     </div>
 
     <div class="form-group">
-        {{ form.user_type.label }}
-        {{ form.user_type(class="form-control") }}
+         {{ form.role_id.label }} {{
+                    form.role_id(class="form-control role-selec") }}
     </div>
 
     <div class="form-group">
@@ -154,6 +155,9 @@
 
 <!-- Custom JS -->
 <script src="{{ url_for('static', filename='assets/js/app.js')}}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="{{ url_for('static', filename='assets/js/user.js') }}"></script>
 
 </body>
 </html>
