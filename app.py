@@ -20,7 +20,7 @@ with app.app_context():
 
 # Register blueprints
 app.register_blueprint(user_bp)
-app.register_blueprint(role_bp)    # ✅ ADD THIS
+app.register_blueprint(role_bp)    
 
 @app.route('/')
 def home():
