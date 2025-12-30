@@ -1,11 +1,15 @@
 from extensions import db
 
 class User(db.Model):
-    __tablename__ = 'user'  # keep as required
+    __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(255), nullable=False, unique=True)
     full_name = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True)
-    user_type = db.Column(db.String(50), nullable=False)
+
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
+    role = db.relationship('Role', backref='users')
+
+
     is_active = db.Column(db.Boolean, nullable=False)
