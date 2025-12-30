@@ -47,29 +47,21 @@
                         {% endif %}
                     {% endwith %}
 
-                    <form action="{{ url_for('role_add') }}" method="post">
+                    <form id="addRoleForm" action="{{ url_for('role.add') }}" method="post">
                         <div class="form-group">
-                            <label for="Fullname">Full Name *</label>
-                            <input type="text" id="Fullname" name="Fullname" class="form-control" required>
+                            <label for="Fullname">Role Name *</label>
+                            <input type="text" id="RoleName" name="RoleName" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label for="ID">Username / ID *</label>
-                            <input type="text" id="ID" name="ID" class="form-control" required>
+                            <input type="text" id="code" name="code" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label for="Description">Description / Message *</label>
                             <textarea id="Description" name="Description" class="form-control" rows="4" required></textarea>
                         </div>
 
-                        <div class="form-group">
-                            <label for="role_type">Role Type *</label>
-                            <select class="select" id="role_type" name="role_type" required>
-                                <option value="">Select Role Type</option>
-                                <option value="admin">Admin</option>
-                                <option value="user">User</option>
-                                <option value="moderator">Moderator</option>
-                            </select>
-                        </div>
+                      
                         <div class="form-group">
                             <label>Status</label>
                             <div class="form-check">
@@ -112,6 +104,9 @@
 
 <!-- Custom JS -->
 <script src="{{ url_for('static', filename='assets/js/app.js')}}"></script>
+ <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="{{ url_for('static', filename='assets/js/role.js') }}"></script>
 
 </body>
 </html>
