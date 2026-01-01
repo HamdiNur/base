@@ -57,6 +57,19 @@
             </button>
           </div>
           {% endfor %} {% endif %} {% endwith %}
+          <!-- Filters -->
+          <!-- Status Filter (hidden placeholder) -->
+          <div id="statusFilterWrapper" class="d-none">
+            <label class="mb-1 mr-2">Status</label>
+            <select
+              id="statusFilter"
+              class="form-control form-control-sm d-inline-block w-auto"
+            >
+              <option value="">All</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
 
           <div class="row">
             <div class="col-md-12">
@@ -157,11 +170,10 @@
     <!-- Custom JS -->
 
     <script src="{{ url_for('static', filename='assets/js/app.js') }}"></script>
-  <script src="{{ url_for('static', filename='assets/js/jquery.dataTables.min.js') }}"></script>
-<script src="{{ url_for('static', filename='assets/js/select2.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/select2.min.js') }}"></script>
 
-<script src="{{ url_for('static', filename='assets/js/dataTables.bootstrap4.min.js') }}"></script>
-
+    <script src="{{ url_for('static', filename='assets/js/dataTables.bootstrap4.min.js') }}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
