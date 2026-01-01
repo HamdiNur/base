@@ -29,74 +29,41 @@
                 </div>
               </div>
               <!-- /Page Header -->
-
               <form
                 id="editRoleForm"
+                method="POST"
                 action="{{ url_for('role.edit', role_id=role.id) }}"
-                method="post"
               >
+                {{ form.hidden_tag() }}
+
                 <div class="form-group">
-                  <label>Role Name</label>
-                  <input
-                    type="text"
-                    id="RoleName"
-                    name="RoleName"
-                    value="{{  role.name }}"
-                    class="form-control"
-                    required
-                  />
+                  {{ form.name.label(class="form-label") }} {{
+                  form.name(class="form-control") }}
                 </div>
+
                 <div class="form-group">
-                  <label>ID</label>
-                  <input
-                    type="text"
-                    id="code"
-                    name="code"
-                    value="{{ role.code }}"
-                    class="form-control"
-                    required
-                  />
+                  {{ form.code.label(class="form-label") }} {{
+                  form.code(class="form-control") }}
                 </div>
+
                 <div class="form-group">
-                  <label for="Description">Description / Message *</label>
-                  <textarea
-                    id="Description"
-                    name="Description"
-                    class="form-control"
-                    rows="4"
-                    required
-                  >
-{{ role.description }}</textarea
-                  >
+                  {{ form.description.label(class="form-label") }} {{
+                  form.description(class="form-control", rows=4) }}
                 </div>
 
                 <div class="form-group">
                   <label>Status</label>
+
                   <div class="status-toggle">
-                    {% if role.is_active %}
-                    <input
-                      type="checkbox"
-                      id="is_active"
-                      name="is_active"
-                      class="check"
-                      checked
-                    />
-                    {% else %}
-                    <input
-                      type="checkbox"
-                      id="is_active"
-                      name="is_active"
-                      class="check"
-                    />
-                    {% endif %}
-                    <label for="is_active" class="checktoggle">checkbox</label>
+                    {{ form.is_active( class="check", id="role_status" ) }}
+                    <label for="role_status" class="checktoggle"
+                      >checkbox</label
+                    >
                   </div>
                 </div>
 
                 <div class="submit-section text-center">
-                  <button class="btn btn-primary submit-btn" type="submit">
-                    Update Role
-                  </button>
+                  {{ form.submit(class="btn btn-primary submit-btn") }}
                   <a
                     href="{{ url_for('role.index') }}"
                     class="btn btn-secondary"
