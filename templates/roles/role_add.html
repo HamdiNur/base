@@ -46,34 +46,47 @@
                             {% endfor %}
                         {% endif %}
                     {% endwith %}
+<form id="addRoleForm" action="{{ url_for('role.add') }}" method="post">
+    {{ form.hidden_tag() }}
 
-                    <form id="addRoleForm" action="{{ url_for('role.add') }}" method="post">
-                        <div class="form-group">
-                            <label for="Fullname">Role Name *</label>
-                            <input type="text" id="RoleName" name="RoleName" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="ID">Username / ID *</label>
-                            <input type="text" id="code" name="code" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="Description">Description / Message *</label>
-                            <textarea id="Description" name="Description" class="form-control" rows="4" required></textarea>
-                        </div>
+    <div class="form-group">
+        {{ form.name.label(class="form-label") }}
+        {{ form.name(class="form-control") }}
+    </div>
 
-                      
-                        <div class="form-group">
-                            <label>Status</label>
-                            <div class="form-check">
-                                <input type="checkbox" id="is_active" name="is_active" class="form-check-input">
-                                <label class="form-check-label" for="is_active">Active</label>
-                            </div>
-                        </div>
-                        
-                        <div class="submit-section">
-                            <button class="btn btn-primary submit-btn" type="submit">Create Role</button>
-                        </div>
-                    </form>
+    <div class="form-group">
+        {{ form.code.label(class="form-label") }}
+        {{ form.code(class="form-control") }}
+    </div>
+
+    <div class="form-group">
+        {{ form.description.label(class="form-label") }}
+        {{ form.description(class="form-control", rows=4) }}
+    </div>
+<div class="form-group">
+    <label>Status</label>
+
+    <div class="status-toggle">
+        {{ form.is_active(
+            class="check",
+            id="role_status"
+        ) }}
+        <label for="role_status" class="checktoggle">checkbox</label>
+    </div>
+</div>
+
+    <div class="submit-section">
+        {{ form.submit(class="btn btn-primary submit-btn") }}
+           <button
+                type="button"
+                class="btn btn-secondary"
+                data-dismiss="modal"
+              >
+                Cancel
+              </button>
+    </div>
+</form>
+
                 </div>
             </div>
         </div>
