@@ -1,46 +1,55 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify
 from extensions import db
 from roles.models import Role
-from flask import jsonify
+from roles.forms import RoleForm
+from sqlalchemy import or_
 
 role_bp = Blueprint('role', __name__, url_prefix='/roles')
 
+
+# =========================
+# LIST ROLES
+# =========================
 @role_bp.route('/')
 def index():
     roles = Role.query.all()
     return render_template('roles/role.html', roles=roles)
+
+
+# =========================
+# CREATE ROLE (PAGE)
+# =========================
 @role_bp.route('/add', methods=['GET'])
 def create():
-    return render_template('roles/role_add.html')
+    form = RoleForm()
+    return render_template('roles/role_add.html', form=form)
 
 
+# =========================
+# CREATE ROLE (AJAX)
+# =========================
 @role_bp.route('/add', methods=['POST'])
 def add():
-    rolename = request.form.get('RoleName')
-    role_code = request.form.get('code')
-    description = request.form.get('Description')
-    is_active = True if request.form.get('is_active') else False
+    form = RoleForm()
 
-    # 1 Basic validation
-    if not rolename or not role_code:
+    # ✅ WTForms validation
+    if not form.validate_on_submit():
         return jsonify({
-            "message": "Role name and code are required"
+            "message": "Invalid form submission"
         }), 400
 
-    #  2 Check if role already exists
-    existing_role = Role.query.filter_by(name=rolename).first()
+    # ✅ Check duplicate role name
+    existing_role = Role.query.filter_by(name=form.name.data).first()
     if existing_role:
-        # ⛔ STOP HERE — NO REDIRECT
         return jsonify({
             "message": "Role already exists. Please create a different role."
-        }), 409   # 👈 THIS IS THE KEY
+        }), 409
 
-    # 3Create role
     role = Role(
-        name=rolename,
-        code=role_code,
-        description=description,
-        is_active=is_active
+        name=form.name.data,
+        code=form.code.data,
+        description=form.description.data,
+        is_active=form.is_active.data
     )
 
     db.session.add(role)
@@ -49,47 +58,73 @@ def add():
     return jsonify({
         "message": "Role created successfully"
     }), 201
+
+
+# =========================
+# EDIT ROLE (PAGE)
+# =========================
 @role_bp.route('/edit/<int:role_id>', methods=['GET'])
 def edit_page(role_id):
     role = Role.query.get_or_404(role_id)
-    return render_template('roles/role_edit.html', role=role)
+    form = RoleForm(obj=role)
+
+    return render_template(
+        'roles/role_edit.html',
+        form=form,
+        role=role
+    )
+
+
+# =========================
+# EDIT ROLE (AJAX)
+# =========================
+from sqlalchemy import or_
+
 @role_bp.route('/edit/<int:role_id>', methods=['POST'])
 def edit(role_id):
     role = Role.query.get_or_404(role_id)
+    form = RoleForm()
 
-    rolename = request.form.get('RoleName')
-    code = request.form.get('code')
-    description = request.form.get('Description')
-
-    if not rolename or not code:
+    if not form.validate_on_submit():
         return jsonify({"message": "Invalid form submission"}), 400
 
+    name = form.name.data.strip()
+    code = form.code.data.strip()
+
     existing_role = Role.query.filter(
-        Role.name == rolename,
+        or_(
+            db.func.lower(Role.name) == name.lower(),
+            db.func.lower(Role.code) == code.lower()
+        ),
         Role.id != role_id
     ).first()
 
     if existing_role:
         return jsonify({
-            "message": "Role name already exists"
+            "message": "Role name or code already exists"
         }), 409
 
-    role.name = rolename
+    role.name = name
     role.code = code
-    role.description = description
-    role.is_active = True if request.form.get('is_active') else False
+    role.description = form.description.data
+    role.is_active = form.is_active.data
 
     db.session.commit()
 
-    return jsonify({
-        "message": "Role updated successfully"
-    }), 200
+    return jsonify({"message": "Role updated successfully"}), 200
 
-
-
+# =========================
+# DELETE ROLE
+# =========================
 @role_bp.route('/delete/<int:role_id>', methods=['POST'])
 def delete(role_id):
     role = Role.query.get_or_404(role_id)
+
+    # ⚠️ Safety check (IMPORTANT)
+    if role.users:
+        return jsonify({
+            "message": "Cannot delete role assigned to users"
+        }), 400
 
     db.session.delete(role)
     db.session.commit()
