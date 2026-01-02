@@ -1,91 +1,77 @@
-// ADD ROLE (AJAX)
-$("#addRoleForm").on("submit", function (e) {
-  e.preventDefault();
-
-  $.ajax({
-    url: $(this).attr("action"),
-    type: "POST",
-    data: $(this).serialize(),
-
-    success: function (res) {
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: res.message,
-        confirmButtonText: "OK",
-      }).then(() => {
-        window.location.href = "/roles";
-      });
-    },
-
-    error: function (xhr) {
-      // 👇 HANDLE "ROLE ALREADY EXISTS"
-      if (xhr.status === 409) {
-        Swal.fire({
-          icon: "warning",
-          title: "Duplicate Role",
-          text: xhr.responseJSON.message,
-        });
-        return;
-      }
-
-      // 👇 GENERAL ERROR
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Something went wrong. Please try again.",
-      });
-    },
-  });
-});
-
-
-$("#editRoleForm").on("submit", function (e) {
-  e.preventDefault(); // ⛔ stop normal submit
-
-  $.ajax({
-    url: $(this).attr("action"),
-    type: "POST",
-    data: $(this).serialize(),
-
-    // ✅ UPDATE SUCCESS
-    success: function (res) {
-      Swal.fire({
-        icon: "success",
-        title: "Updated",
-        text: res.message,
-      }).then(() => {
-        window.location.href = "/roles";
-      });
-    },
-
-    // ❌ ERRORS
-    error: function (xhr) {
-
-      // 🔁 Duplicate role name
-      if (xhr.status === 409) {
-        Swal.fire({
-          icon: "warning",
-          title: "Duplicate Role",
-          text: xhr.responseJSON.message,
-        });
-        return;
-      }
-
-      // ❌ Validation / server error
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: xhr.responseJSON?.message || "Update failed",
-      });
-    },
-  });
-});
-
+function getCSRFToken() {
+  return $('input[name="csrf_token"]').val();
+}
 
 $(document).ready(function () {
+  // =====================
+  // ADD ROLE
+  // =====================
+  $("#addRoleForm").on("submit", function (e) {
+    e.preventDefault();
 
+    $.ajax({
+      url: $(this).attr("action"),
+      type: "POST",
+      data: $(this).serialize(),
+      headers: { "X-CSRFToken": getCSRFToken() },
+
+      success: function (res) {
+        Swal.fire("Success", res.message, "success").then(
+          () => (window.location.href = "/roles")
+        );
+      },
+
+      error: function (xhr) {
+        if (xhr.status === 409) {
+          Swal.fire("Duplicate Role", xhr.responseJSON.message, "warning");
+          return;
+        }
+
+        Swal.fire(
+          "Error",
+          xhr.responseJSON?.message || "Something went wrong",
+          "error"
+        );
+      },
+    });
+  });
+
+  // =====================
+  // EDIT ROLE
+  // =====================
+  $("#editRoleForm").on("submit", function (e) {
+    e.preventDefault();
+
+    $.ajax({
+      url: $(this).attr("action"),
+      type: "POST",
+      data: $(this).serialize(),
+      headers: { "X-CSRFToken": getCSRFToken() },
+
+      success: function (res) {
+        Swal.fire("Updated", res.message, "success").then(
+          () => (window.location.href = "/roles")
+        );
+      },
+
+      error: function (xhr) {
+        if (xhr.status === 409) {
+          Swal.fire("Duplicate Role", xhr.responseJSON.message, "warning");
+          return;
+        }
+
+        Swal.fire(
+          "Error",
+          xhr.responseJSON?.message || "Update failed",
+          "error"
+        );
+      },
+    });
+  });
+
+  // =====================
   // DELETE ROLE
+  // =====================
   $(document).on("click", ".delete-role", function () {
     const roleId = $(this).data("id");
 
@@ -94,34 +80,67 @@ $(document).ready(function () {
       text: "This role will be permanently deleted!",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
     }).then((result) => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: `/roles/delete/${roleId}`,
-          type: "POST",
-          success: function (res) {
-            Swal.fire(
-              "Deleted!",
-              res.message || "Role has been deleted.",
-              "success"
-            ).then(() => location.reload());
-          },
-          error: function () {
-            Swal.fire("Error!", "Something went wrong.", "error");
-          },
-        });
-      }
+      if (!result.isConfirmed) return;
+
+      $.ajax({
+        url: `/roles/delete/${roleId}`,
+        type: "POST",
+        headers: { "X-CSRFToken": getCSRFToken() },
+
+        success: function (res) {
+          Swal.fire("Deleted", res.message, "success").then(() =>
+            location.reload()
+          );
+        },
+
+        error: function (xhr) {
+          Swal.fire(
+            "Error",
+            xhr.responseJSON?.message || "Cannot delete role",
+            "error"
+          );
+        },
+      });
     });
   });
 
-});
+  // =====================
+  // DATATABLE
+  // =====================
+  let rolesTable;
 
+  $(document).ready(function () {
+    rolesTable = $("#rolesTable").DataTable({
+      pageLength: 10,
+      dom:
+        '<"row align-items-center mb-3"' +
+        '<"col-md-4"l>' +
+        '<"col-md-4 text-center"f>' +
+        '<"col-md-4 text-right status-filter-container">' +
+        ">" +
+        "rt" +
+        '<"row mt-3"' +
+        '<"col-md-5"i>' +
+        '<"col-md-7"p>' +
+        ">",
+    });
 
-$(document).ready(function () {
-  $('#rolesTable').DataTable({
-    pageLength: 10
+    // Move status filter into toolbar
+    $(".status-filter-container").html($("#statusFilterWrapper").html());
+
+    // Status filter logic (exact match)
+    $(document).on("change", "#statusFilter", function () {
+      const value = this.value;
+
+      if (value) {
+        rolesTable
+          .column(3)
+          .search("^" + value + "$", true, false)
+          .draw();
+      } else {
+        rolesTable.column(3).search("").draw();
+      }
+    });
   });
 });
