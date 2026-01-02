@@ -43,28 +43,29 @@
             </div>
           </div>
           <!-- /Page Header -->
-           <!-- Filters -->
-<!-- div class="row mb-3">
-  <div class="col-md-3">
-    <label class="mb-1">Status</label>
-    <select id="statusFilter" class="form-control form-control-sm">
-      <option value="">All</option>
-      <option value="Active">Active</option>
-      <option value="Inactive">Inactive</option>
-    </select>
-  </div>
+          <!-- Filters (hidden placeholders for DataTables toolbar) -->
+          <div id="userFiltersWrapper" class="d-none">
+            <label class="mb-1 mr-2">Status</label>
+            <select
+              id="statusFilter"
+              class="form-control form-control-sm d-inline-block w-auto mr-3"
+            >
+              <option value="">All</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
 
-  <div class="col-md-3">
-    <label class="mb-1">Role</label>
-    <select id="roleFilter" class="form-control form-control-sm">
-      <option value="">All</option>
-      {% for r in roles %}
-        <option value="{{ r.name }}">{{ r.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-</div> -->
-
+            <label class="mb-1 mr-2">Role</label>
+            <select
+              id="roleFilter"
+              class="form-control form-control-sm d-inline-block w-auto"
+            >
+              <option value="">All</option>
+              {% for r in roles %}
+              <option value="{{ r.name }}">{{ r.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
 
           <!-- Users Table -->
           <div class="row">
@@ -189,9 +190,17 @@
                   </div>
                 </div>
 
+
                 <div class="col-sm-6">
                   <div class="form-group">
-                    <label> {{ form.is_active() }} Active </label>
+                    <label>Status</label>
+
+                    <div class="status-toggle">
+                      {{ form.is_active( class="check", id="user_status" ) }}
+                      <label for="user_status" class="checktoggle"
+                        >checkbox</label
+                      >
+                    </div>
                   </div>
                 </div>
               </div>
@@ -222,16 +231,15 @@
     <script src="{{ url_for('static', filename='assets/js/moment.min.js') }}"></script>
     <script src="{{ url_for('static', filename='assets/js/bootstrap-datetimepicker.min.js') }}"></script>
     <!-- Vendor JS (COMPANY) -->
-<script src="{{ url_for('static', filename='assets/js/jquery.dataTables.min.js') }}"></script>
-<script src="{{ url_for('static', filename='assets/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/dataTables.bootstrap4.min.js') }}"></script>
 
-<script src="{{ url_for('static', filename='assets/js/select2.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/select2.min.js') }}"></script>
 
     <script src="{{ url_for('static', filename='assets/js/app.js') }}"></script>
- 
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script src="{{ url_for('static', filename='assets/js/user.js') }}"></script>
-
   </body>
 </html>
