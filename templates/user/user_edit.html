@@ -1,40 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- Head -->
-{% include 'layouts/head.html' %}
-<!-- /Head -->
-<body>
-<!-- Main Wrapper -->
-<div class="main-wrapper">
+  <!-- Head -->
+  {% include 'layouts/head.html' %}
+  <!-- /Head -->
+  <body>
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+      <!-- Header -->
+      {% include 'layouts/header.html' %}
+      <!-- /Header -->
 
-    <!-- Header -->
-    {% include 'layouts/header.html' %}
-    <!-- /Header -->
+      <!-- Sidebar -->
+      {% include 'layouts/sidebar.html' %}
+      <!-- /Sidebar -->
 
-    <!-- Sidebar -->
-    {% include 'layouts/sidebar.html' %}
-    <!-- /Sidebar -->
-
-    <!-- Page Wrapper -->
-    <div class="page-wrapper">
-
+      <!-- Page Wrapper -->
+      <div class="page-wrapper">
         <!-- Page Content -->
         <div class="content container-fluid">
-            <div class="row">
-                <div class="col-md-6 offset-md-3">
+          <div class="row">
+            <div class="col-md-6 offset-md-3">
+              <!-- Page Header -->
+              <div class="page-header">
+                <div class="row">
+                  <div class="col-sm-12">
+                    <h3 class="page-title">Update User</h3>
+                  </div>
+                </div>
+              </div>
+              <!-- /Page Header -->
 
-                    <!-- Page Header -->
-                    <div class="page-header">
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <h3 class="page-title">Update User</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /Page Header -->
-                     
-
-                    <!-- <form action="{{ url_for('user.edit', user_id=data.id) }}" method="post">
+              <!-- <form action="{{ url_for('user.edit', user_id=data.id) }}" method="post">
                         <div class="form-group">
                             <label>Username</label>
                             <input type="text" id="username" name="username" value="{{data.username}}"
@@ -78,86 +74,92 @@
                             <button class="btn btn-primary submit-btn" type="submit">Update User</button>
                         </div>
                     </form> -->
-                    <form id="editUserForm"
-                     method="POST" action="{{ url_for('user.edit', user_id=data.id) }}">
-    {{ form.hidden_tag() }}
+              <form
+                id="editUserForm"
+                method="POST"
+                action="{{ url_for('user.edit', user_id=data.id) }}"
+              >
+                {{ form.hidden_tag() }}
 
-    <div class="form-group">
-        {{ form.username.label }}
-        {{ form.username(class="form-control") }}
-        {% for error in form.username.errors %}
-            <small class="text-danger">{{ error }}</small>
-        {% endfor %}
-    </div>
-
-    <div class="form-group">
-        {{ form.full_name.label }}
-        {{ form.full_name(class="form-control") }}
-        {% for error in form.full_name.errors %}
-            <small class="text-danger">{{ error }}</small>
-        {% endfor %}
-    </div>
-
-    <div class="form-group">
-        {{ form.email.label }}
-        {{ form.email(class="form-control") }}
-        {% for error in form.email.errors %}
-            <small class="text-danger">{{ error }}</small>
-        {% endfor %}
-    </div>
-
-    <div class="form-group">
-         {{ form.role_id.label }} {{
-                    form.role_id(class="form-control role-selec") }}
-    </div>
-
-    <div class="form-group">
-        <label>
-            {{ form.is_active() }} Active
-        </label>
-    </div>
-
-    <div class="submit-section">
-        {{ form.submit(class="btn btn-primary") }}
-        <a href="{{ url_for('user.index') }}" class="btn btn-secondary">
-            Cancel
-        </a>
-    </div>
-</form>
-
+                <div class="form-group">
+                  {{ form.username.label }} {{
+                  form.username(class="form-control") }} {% for error in
+                  form.username.errors %}
+                  <small class="text-danger">{{ error }}</small>
+                  {% endfor %}
                 </div>
+
+                <div class="form-group">
+                  {{ form.full_name.label }} {{
+                  form.full_name(class="form-control") }} {% for error in
+                  form.full_name.errors %}
+                  <small class="text-danger">{{ error }}</small>
+                  {% endfor %}
+                </div>
+
+                <div class="form-group">
+                  {{ form.email.label }} {{ form.email(class="form-control") }}
+                  {% for error in form.email.errors %}
+                  <small class="text-danger">{{ error }}</small>
+                  {% endfor %}
+                </div>
+
+                <div class="form-group">
+                  {{ form.role_id.label }} {{ form.role_id(class="form-control
+                  role-select") }}
+                </div>
+
+                <div class="form-group">
+                  <label>Status</label>
+
+                  <div class="status-toggle">
+                    {{ form.is_active( class="check", id="role_status" ) }}
+                    <label for="role_status" class="checktoggle"
+                      >checkbox</label
+                    >
+                  </div>
+                </div>
+
+                <div class="submit-section">
+                  {{ form.submit(class="btn btn-primary") }}
+                  <a
+                    href="{{ url_for('user.index') }}"
+                    class="btn btn-secondary"
+                  >
+                    Cancel
+                  </a>
+                </div>
+              </form>
             </div>
+          </div>
         </div>
         <!-- /Page Content -->
-
+      </div>
+      <!-- /Page Wrapper -->
     </div>
-    <!-- /Page Wrapper -->
+    <!-- /Main Wrapper -->
 
-</div>
-<!-- /Main Wrapper -->
+    <!-- jQuery -->
+    <script src="{{ url_for('static', filename='assets/js/jquery-3.5.1.min.js')}}"></script>
 
-<!-- jQuery -->
-<script src="{{ url_for('static', filename='assets/js/jquery-3.5.1.min.js')}}"></script>
+    <!-- Bootstrap Core JS -->
+    <script src="{{ url_for('static', filename='assets/js/popper.min.js')}}"></script>
+    <script src="{{ url_for('static', filename='assets/js/bootstrap.min.js')}}"></script>
 
-<!-- Bootstrap Core JS -->
-<script src="{{ url_for('static', filename='assets/js/popper.min.js')}}"></script>
-<script src="{{ url_for('static', filename='assets/js/bootstrap.min.js')}}"></script>
+    <!-- Slimscroll JS -->
+    <script src="{{ url_for('static', filename='assets/js/jquery.slimscroll.min.js')}}"></script>
 
-<!-- Slimscroll JS -->
-<script src="{{ url_for('static', filename='assets/js/jquery.slimscroll.min.js')}}"></script>
+    <!-- Slimscroll JS -->
+    <script src="{{ url_for('static', filename='assets/js/select2.min.js')}}"></script>
 
-<!-- Slimscroll JS -->
-<script src="{{ url_for('static', filename='assets/js/select2.min.js')}}"></script>
+    <!-- Datetimepicker JS -->
+    <script src="{{ url_for('static', filename='assets/js/moment.min.js')}}"></script>
+    <script src="{{ url_for('static', filename='assets/js/bootstrap-datetimepicker.min.js')}}"></script>
 
-<!-- Datetimepicker JS -->
-<script src="{{ url_for('static', filename='assets/js/moment.min.js')}}"></script>
-<script src="{{ url_for('static', filename='assets/js/bootstrap-datetimepicker.min.js')}}"></script>
-
-<!-- Custom JS -->
-<script src="{{ url_for('static', filename='assets/js/app.js')}}"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='assets/js/app.js')}}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script src="{{ url_for('static', filename='assets/js/user.js') }}"></script>
-
-</body>
+  </body>
 </html>
