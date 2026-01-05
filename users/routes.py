@@ -85,7 +85,7 @@ def edit_page(user_id):
     return render_template(
         'user/user_edit.html',
         form=form,
-                data=user   # ✅ THIS FIXES IT
+                data=user  
 
     )
     
