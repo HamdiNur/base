@@ -89,55 +89,7 @@
                   </thead>
 
                   <tbody>
-                    {% for row in roles %}
-                    <tr>
-                      <td>{{ row.name }}</td>
-                      <td>{{ row.code }}</td>
-                      <td>{{ row.description }}</td>
-                      <td>
-                        {% if row.is_active %}
-                        <span class="badge badge-success">Active</span>
-                        {% else %}
-                        <span class="badge badge-danger">Inactive</span>
-                        {% endif %}
-                      </td>
-
-                      <td class="text-right">
-                        <div class="dropdown dropdown-action">
-                          <a
-                            href="#"
-                            class="action-icon dropdown-toggle"
-                            data-toggle="dropdown"
-                          >
-                            <i class="material-icons">more_vert</i>
-                          </a>
-
-                          <div class="dropdown-menu dropdown-menu-right">
-                            <!-- EDIT (GET) -->
-                            <a
-                              class="dropdown-item"
-                              href="{{ url_for('role.edit', role_id=row.id) }}"
-                            >
-                              <i class="fa fa-pencil m-r-5"></i> Edit
-                            </a>
-
-                            <!-- DELETE (POST) -->
-                            <button
-                              type="button"
-                              class="dropdown-item text-danger delete-role"
-                              data-id="{{ row.id }}"
-                            >
-                              <i class="fa fa-trash-o m-r-5"></i> Delete
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                      <td colspan="5" class="text-center">No roles found</td>
-                    </tr>
-                    {% endfor %}
+               
                   </tbody>
                 </table>
               </div>

@@ -107,40 +107,78 @@ $(document).ready(function () {
 
   // =====================
   // DATATABLE
-  // =====================
-  let rolesTable;
+ // =====================
+// ROLES DATATABLE (SERVER SIDE)
+// =====================
+let rolesTable;
 
-  $(document).ready(function () {
-    rolesTable = $("#rolesTable").DataTable({
-      pageLength: 10,
-      dom:
-        '<"row align-items-center mb-3"' +
+if ($("#rolesTable").length) {
+  rolesTable = $("#rolesTable").DataTable({
+    processing: true,
+    serverSide: true,
+    pageLength: 10,
+
+    dom:
+      '<"row align-items-center mb-3"' +
         '<"col-md-4"l>' +
         '<"col-md-4 text-center"f>' +
-        '<"col-md-4 text-right status-filter-container">' +
-        ">" +
-        "rt" +
-        '<"row mt-3"' +
+        '<"col-md-4 text-right">' +
+      ">" +
+      "rt" +
+      '<"row mt-3"' +
         '<"col-md-5"i>' +
         '<"col-md-7"p>' +
-        ">",
-    });
+      ">",
 
-    // Move status filter into toolbar
-    $(".status-filter-container").html($("#statusFilterWrapper").html());
+    ajax: {
+      url: "/roles/datatable",
+      type: "GET"
+    },
 
-    // Status filter logic (exact match)
-    $(document).on("change", "#statusFilter", function () {
-      const value = this.value;
+  columns: [
+  { data: "name" },
+  { data: "code" },
+  { data: "description" },
+  {
+    data: "is_active",
+    render: function (data) {
+      return data
+        ? '<span class="badge badge-success">Active</span>'
+        : '<span class="badge badge-danger">Inactive</span>';
+    }
+  },
+{
+  data: "id",
+  orderable: false,
+  searchable: false,
+  className: "text-right",
+  render: function (id) {
+    return `
+      <div class="dropdown dropdown-action">
+        <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown">
+          <i class="material-icons">more_vert</i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right">
+          <a class="dropdown-item" href="/roles/edit/${id}">
+            <i class="fa fa-pencil m-r-5"></i> Edit
+          </a>
+          <button
+            type="button"
+            class="dropdown-item text-danger delete-role"
+            data-id="${id}">
+            <i class="fa fa-trash-o m-r-5"></i> Delete
+          </button>
+        </div>
+      </div>
+    `;
+  }
+}
 
-      if (value) {
-        rolesTable
-          .column(3)
-          .search("^" + value + "$", true, false)
-          .draw();
-      } else {
-        rolesTable.column(3).search("").draw();
-      }
-    });
+]
+
   });
+}
+
+
+  
 });
