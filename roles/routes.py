@@ -12,9 +12,7 @@ role_bp = Blueprint('role', __name__, url_prefix='/roles')
 # =========================
 @role_bp.route('/')
 def index():
-    roles = Role.query.all()
-    return render_template('roles/role.html', roles=roles)
-
+    return render_template('roles/role.html')
 
 # =========================
 # CREATE ROLE (PAGE)
@@ -132,3 +130,70 @@ def delete(role_id):
     return jsonify({
         "message": "Role deleted successfully"
     }), 200
+
+
+@role_bp.route("/select2")
+def roles_select2():
+    q = request.args.get("q", "")
+
+    roles = (
+        Role.query
+        .filter(Role.is_active.is_(True))
+        .filter(Role.name.ilike(f"%{q}%"))
+        .limit(10)
+        .all()
+    )
+
+    return jsonify({
+        "results": [
+            {"id": r.id, "text": r.name}
+            for r in roles
+        ]
+    })
+
+@role_bp.route("/datatable")
+def datatable():
+    draw = int(request.args.get("draw", 1))
+    start = int(request.args.get("start", 0))
+    length = int(request.args.get("length", 10))
+    search_value = request.args.get("search[value]", "").strip()
+
+    query = Role.query
+
+    # 🔍 SEARCH (name, code, description)
+    if search_value:
+        query = query.filter(
+            or_(
+                Role.name.ilike(f"%{search_value}%"),
+                Role.code.ilike(f"%{search_value}%"),
+                Role.description.ilike(f"%{search_value}%")
+            )
+        )
+
+    total_records = Role.query.count()
+    filtered_records = query.count()
+
+    roles = (
+        query
+        .order_by(Role.id.desc())
+        .offset(start)
+        .limit(length)
+        .all()
+    )
+
+    data = []
+    for r in roles:
+        data.append({
+            "id": r.id,
+            "name": r.name,
+            "code": r.code,
+            "description": r.description or "",
+            "is_active": r.is_active
+        })
+
+    return jsonify({
+        "draw": draw,
+        "recordsTotal": total_records,
+        "recordsFiltered": filtered_records,
+        "data": data
+    })
