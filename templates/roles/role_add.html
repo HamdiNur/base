@@ -77,13 +77,11 @@
 
     <div class="submit-section">
         {{ form.submit(class="btn btn-primary submit-btn") }}
-           <button
-                type="button"
-                class="btn btn-secondary"
-                data-dismiss="modal"
-              >
-                Cancel
-              </button>
+          <a
+                    href="{{ url_for('role.index') }}"
+                    class="btn btn-secondary"
+                    >Cancel</a
+                  >
     </div>
 </form>
 
