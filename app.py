@@ -2,6 +2,9 @@ from flask import Flask, render_template
 from extensions import db
 from users.routes import user_bp
 from roles.routes import role_bp   # ✅ ADD THIS
+from projects import projects_bp
+from auth import auth_bp
+from extensions import db, migrate, login_manager
 import os
 from dotenv import load_dotenv
 
@@ -13,7 +16,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
-
+migrate.init_app(app, db)
+login_manager.init_app(app)
 # TEMP: create tables once
 with app.app_context():
     db.create_all()
@@ -21,6 +25,9 @@ with app.app_context():
 # Register blueprints
 app.register_blueprint(user_bp)
 app.register_blueprint(role_bp)    
+app.register_blueprint(projects_bp)
+app.register_blueprint(auth_bp)
+
 
 @app.route('/')
 def home():

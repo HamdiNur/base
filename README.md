@@ -6,7 +6,7 @@ It demonstrates how real-world Flask applications handle users, roles, access co
 The system is designed following industry best practices and can be adapted for organizations such as companies, NGOs, schools, or clinics.
 
 ✅ Implemented Features (Final)
-Core System
+Core Systems.
 
 User Management (CRUD)
 
