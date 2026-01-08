@@ -1,5 +1,5 @@
 from flask import Flask, render_template
-from extensions import db
+from extensions import db, csrf
 from users.routes import user_bp
 from roles.routes import role_bp   # ✅ ADD THIS
 from projects import projects_bp
@@ -18,6 +18,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 migrate.init_app(app, db)
 login_manager.init_app(app)
+csrf.init_app(app)  # 🔥 REQUIRED
+
 # TEMP: create tables once
 with app.app_context():
     db.create_all()
