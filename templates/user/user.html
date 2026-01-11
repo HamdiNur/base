@@ -198,6 +198,7 @@
 
     <!-- App core -->
     <script src="{{ url_for('static', filename='assets/js/app.js') }}"></script>
+
 <script>
   const CAN_MANAGE_USERS = {{ has_permission(current_user, "manage_users") | tojson }};
 </script>
