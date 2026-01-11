@@ -94,13 +94,22 @@ $(document).ready(function () {
           );
         },
 
-        error: function (xhr) {
-          Swal.fire(
-            "Error",
-            xhr.responseJSON?.message || "Cannot delete role",
-            "error"
-          );
-        },
+     error: function (xhr) {
+  let msg = "Unexpected error";
+
+  if (xhr.responseJSON && xhr.responseJSON.message) {
+    msg = xhr.responseJSON.message;
+  } else if (xhr.status === 401) {
+    msg = "You are not logged in";
+  } else if (xhr.status === 403) {
+    msg = "You do not have permission to delete this role";
+  } else if (xhr.status === 409) {
+    msg = "Role is in use and cannot be deleted";
+  }
+
+  Swal.fire("Error", msg, "error");
+}
+,
       });
     });
   });
@@ -148,24 +157,24 @@ if ($("#rolesTable").length) {
     }
   },
 {
-  data: "id",
+  data: null,   // ✅ THIS IS REQUIRED
   orderable: false,
   searchable: false,
   className: "text-right",
-  render: function (id) {
+  render: function (data, type, row) {
     return `
       <div class="dropdown dropdown-action">
         <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown">
           <i class="material-icons">more_vert</i>
         </a>
         <div class="dropdown-menu dropdown-menu-right">
-          <a class="dropdown-item" href="/roles/edit/${id}">
+          <a class="dropdown-item" href="/roles/edit/${row.id}">
             <i class="fa fa-pencil m-r-5"></i> Edit
           </a>
           <button
             type="button"
             class="dropdown-item text-danger delete-role"
-            data-id="${id}">
+            data-id="${row.id}">
             <i class="fa fa-trash-o m-r-5"></i> Delete
           </button>
         </div>
@@ -173,6 +182,7 @@ if ($("#rolesTable").length) {
     `;
   }
 }
+
 
 ]
 
