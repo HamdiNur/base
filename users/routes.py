@@ -1,55 +1,77 @@
 from flask import Blueprint, render_template, request, jsonify
 from sqlalchemy.exc import IntegrityError
+from auth.utils import generate_setup_token, hash_value
 
 from extensions import db
 from users.models import User
 from users.forms import UserForm
 from roles.models import Role
+from flask_login import login_required, current_user
+from flask import abort
+from auth.decorators import permission_required
 
+from extensions import login_manager
 
 user_bp = Blueprint("user", __name__, url_prefix="/user")
 
+def admin_only():
+    if not current_user.is_authenticated:
+        abort(401)
+    if current_user.role.name not in ["admin", "Super Admin"]:
+        abort(403)
 
 # =====================
 # USERS PAGE
-# =====================
 @user_bp.route("/")
+@login_required
+@permission_required("view_users")
 def index():
     form = UserForm()
-    form.role_id.choices = []  # Select2 handles loading
+    
     return render_template("user/user.html", form=form)
-
-
-# =====================
 # ADD USER (AJAX)
-# =====================
+
 @user_bp.route("/add", methods=["POST"])
+@login_required
+@permission_required("manage_users")
 def add():
+    admin_only()
     form = UserForm()
 
-    # IMPORTANT: allow Select2 value
-    form.role_id.choices = [(form.role_id.data, "temp")]
+# 🔥 Fix Select2 + WTForms validation
+    if form.role_id.data:
+       form.role_id.choices = [(int(form.role_id.data), "temp")]
 
     if not form.validate_on_submit():
-        return jsonify({"message": "Invalid form data"}), 400
+      print(form.errors)
+      return jsonify({"message": "Invalid form data"}), 400
 
-    role = Role.query.get(form.role_id.data)
+    role = Role.query.get(int(form.role_id.data))
     if not role or not role.is_active:
-        return jsonify({"message": "Selected role is inactive"}), 400
+      return jsonify({"message": "Invalid role"}), 400
+
+       # 🔐 Generate one-time setup token
+    setup_token = generate_setup_token()
 
     user = User(
-        username=form.username.data,
-        full_name=form.full_name.data,
-        email=form.email.data,
-        role_id=form.role_id.data,
-        is_active=bool(form.is_active.data)
-    )
+      username=form.username.data,
+      full_name=form.full_name.data,
+      email=form.email.data,
+      role_id=form.role_id.data,
+      is_active=bool(form.is_active.data),
+
+    # 🔑 auth fields
+      must_set_password=True,
+      setup_token_hash=hash_value(setup_token)
+   )
 
     try:
         db.session.add(user)
         db.session.commit()
-        return jsonify({"message": "User created successfully"}), 201
-
+        return jsonify({
+                 "message": "User created successfully",
+                    "setup_token": setup_token
+                               }), 201
     except IntegrityError:
         db.session.rollback()
         return jsonify({"message": "Username or email already exists"}), 409
@@ -58,10 +80,19 @@ def add():
 # =====================
 # EDIT USER PAGE
 # =====================
-@user_bp.route("/edit/<int:user_id>")
+
+@user_bp.route("/edit/<int:user_id>", methods=["GET"])
+@login_required
+@permission_required("manage_users")
 def edit_page(user_id):
     user = User.query.get_or_404(user_id)
+
     form = UserForm(obj=user)
+    # 🔥 DYNAMIC FORM TRIMMING
+    if current_user.role.name not in ["admin", "Super Admin"]:
+      del form.username
+      del form.role_id
+      del form.is_active
 
     roles = Role.query.all()
     form.role_id.choices = [
@@ -75,14 +106,21 @@ def edit_page(user_id):
         data=user
     )
 
-
 # =====================
 # EDIT USER (AJAX)
 # =====================
 @user_bp.route("/edit/<int:user_id>", methods=["POST"])
+@login_required
 def edit(user_id):
+    admin_only()
     user = User.query.get_or_404(user_id)
     form = UserForm()
+
+# 🔥 SAME TRIMMING ON POST
+    if current_user.role.name not in ["admin", "Super Admin"]:
+       del form.username
+       del form.role_id
+       del form.is_active
 
     roles = Role.query.all()
     form.role_id.choices = [(r.id, r.name) for r in roles]
@@ -94,11 +132,23 @@ def edit(user_id):
     if not role or not role.is_active:
         return jsonify({"message": "Selected role is inactive"}), 400
 
-    user.username = form.username.data
+   # always allowed
     user.full_name = form.full_name.data
     user.email = form.email.data
+
+# only if field exists
+    if hasattr(form, "username"):
+       user.username = form.username.data
+
+    if hasattr(form, "role_id"):
+       role = Role.query.get(form.role_id.data)
+    if not role or not role.is_active:
+        return jsonify({"message": "Selected role is inactive"}), 400
     user.role_id = form.role_id.data
-    user.is_active = bool(form.is_active.data)
+
+    if hasattr(form, "is_active"):
+       user.is_active = bool(form.is_active.data)
+
 
     try:
         db.session.commit()
@@ -113,7 +163,11 @@ def edit(user_id):
 # DELETE USER
 # =====================
 @user_bp.route("/delete/<int:user_id>", methods=["POST"])
+@login_required
+@permission_required("manage_users")
 def delete(user_id):
+    admin_only()
+
     user = User.query.get_or_404(user_id)
     db.session.delete(user)
     db.session.commit()
@@ -144,7 +198,10 @@ def role_search():
 # =====================
 # DATATABLE SERVER SIDE
 # =====================
+
 @user_bp.route("/datatable")
+@login_required
+@permission_required("view_users")
 def datatable():
     draw = request.args.get("draw", type=int)
     start = request.args.get("start", type=int)
@@ -217,3 +274,21 @@ def datatable():
         "recordsFiltered": records_filtered,
         "data": data
     })
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+@user_bp.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    user = current_user
+
+    if request.method == "POST":
+        user.full_name = request.form.get("full_name")
+        user.email = request.form.get("email")
+
+        db.session.commit()
+        return jsonify({"message": "Profile updated successfully"}), 200
+
+    return render_template("user/profile.html", user=user)

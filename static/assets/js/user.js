@@ -19,6 +19,10 @@ if ($("#usersTable").length) {
     processing: true,
     serverSide: true,
     pageLength: 10,
+      columnDefs: CAN_MANAGE_USERS ? [] : [
+    { targets: -1, visible: false, searchable: false }
+  ],
+
     dom:
       '<"row align-items-center mb-3"' +
       '<"col-md-3"l>' +
@@ -131,11 +135,33 @@ if ($("#usersTable").length) {
       data: $(this).serialize(),
       headers: { "X-CSRFToken": getCSRFToken() },
 
-      success: function (res) {
-        Swal.fire("Success", res.message, "success").then(() =>
-          location.reload()
-        );
-      },
+    success: function (res) {
+        let html = `
+    <p><strong>User created successfully.</strong></p>
+    <p>
+      <strong>Setup Token:</strong><br>
+      <code style="font-size:16px">${res.setup_token}</code>
+    </p>
+    <p>
+    The user will use this token to log in once and set their password.
+  </p>
+    <p class="text-danger">
+      ⚠️ Copy this token now. You will NOT see it again.
+    </p>
+  `;
+
+  Swal.fire({
+    title: "User Created",
+    html: html,
+    icon: "success",
+    confirmButtonText: "I have copied it"
+  });
+
+  $("#add_user").modal("hide");
+  $("#addUserForm")[0].reset();
+  usersTable.ajax.reload(null, false);
+}
+,
 
       error: function (xhr) {
         Swal.fire(
@@ -229,4 +255,7 @@ if ($("#usersTable").length) {
       });
     });
   });
+
+
+  
 });

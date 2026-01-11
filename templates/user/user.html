@@ -81,7 +81,9 @@
                       <th>Email</th>
                       <th>Role</th>
                       <th>Status</th>
-                      <th class="text-center">Action</th>
+{% if has_permission(current_user, "manage_users") %}
+<th class="text-center">Action</th>
+{% endif %}
                     </tr>
                   </thead>
                   <tbody></tbody>
@@ -98,6 +100,8 @@
     <!-- /Main Wrapper -->
 
     <!-- Add User Modal -->
+     {% if has_permission(current_user, "manage_users") %}
+
     <div id="add_user" class="modal custom-modal fade" role="dialog">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -173,6 +177,8 @@
         </div>
       </div>
     </div>
+    {% endif %}
+
     <!-- /Add User Modal -->
 
     <!-- Scripts -->
@@ -192,6 +198,9 @@
 
     <!-- App core -->
     <script src="{{ url_for('static', filename='assets/js/app.js') }}"></script>
+<script>
+  const CAN_MANAGE_USERS = {{ has_permission(current_user, "manage_users") | tojson }};
+</script>
 
     <!-- Page JS -->
     <script src="{{ url_for('static', filename='assets/js/user.js') }}"></script>
