@@ -1,168 +1,190 @@
-Project Completion: Role-Based Admin Management System
+🗂️ TaskPlate – Project & User Management System
+📌 Overview
 
-This project has been extended from a learning sandbox into a fully functional Role-Based Admin Management System.
-It demonstrates how real-world Flask applications handle users, roles, access control, and admin workflows.
+TaskPlate is an internal role-based management system designed for organizations to manage:
 
-The system is designed following industry best practices and can be adapted for organizations such as companies, NGOs, schools, or clinics.
+Users and roles
 
-✅ Implemented Features (Final)
-Core Systems.
+Projects and team members
 
-User Management (CRUD)
+Access control using permissions
 
-Role Management (CRUD)
+The system ensures that each user can only see and perform actions allowed by their role.
 
-User–Role association
+This project was developed as part of an internship learning program using Flask and Python, following real-world backend patterns.
 
-Active / Inactive status handling
+🛠️ Technologies Used
 
-Form validation using Flask-WTForms
+Backend: Flask (Python)
 
-Server-side and client-side validation
+Database: PostgreSQL
 
-UI & UX
+ORM: SQLAlchemy
 
-Responsive admin dashboard layout
+Authentication: Flask-Login
 
-Bootstrap-based UI
+Forms & Security: Flask-WTF (CSRF protection)
 
-Modal forms for create/edit actions
+Frontend: Jinja2, Bootstrap
 
-SweetAlert confirmation dialogs
+AJAX & UI: jQuery, DataTables, Select2, SweetAlert
 
-DataTables pagination, search, and filters
+📁 Project Features
 
-Select2 dropdowns with lazy loading
+Secure login system
 
-Architecture
+Role-based access control (RBAC)
 
-Flask Blueprints (users, roles)
+User management (create, view, activate/deactivate)
 
-Separation of concerns:
+Role management (admin-only)
 
-models.py
+Project creation and management
 
-forms.py
+Assigning managers and project members
 
-routes.py
+Server-side pagination and filtering
 
-Shared templates and static assets
+Clean and permission-aware UI
 
-SQLAlchemy ORM and Raw SQL comparison
+👥 Roles & Permissions
 
-🧠 System Design Overview
-User ── belongs to ──► Role
+The system uses roles, and each role has a specific set of permissions.
 
+🔑 Roles Overview
+1  Admin
 
-Each User is assigned exactly one Role
+Full system access.
 
-Roles define responsibility (Admin, Staff, etc.)
+Permissions:
 
-The system is structured to support future permissions logic
+View dashboard
 
-🗂️ Final Project Structure
-project/
-│
-├── app.py
-├── extensions.py
-│
-├── users/
-│   ├── __init__.py
-│   ├── routes.py
-│   ├── forms.py
-│   └── models.py
-│
-├── roles/
-│   ├── __init__.py
-│   ├── routes.py
-│   ├── forms.py
-│   └── models.py
-│
-├── templates/
-│   ├── users/
-│   ├── roles/
-│   └── layouts/
-│
-├── static/
-│   ├── css/
-│   ├── js/
-│   └── plugins/
-│
-├── database.sql
-└── README.md
+Manage users (create, edit, delete)
 
-🔐 Authentication & Authorization (Planned / Ready)
+Manage roles
 
-The current structure is authentication-ready and can easily be extended to include:
+Create, edit, and delete projects
 
-Login / Logout
+Assign managers and members
 
-Role-based access control
+View all data in the system
 
-Permission checks per route
+2  Manager
 
-Audit logs
+Project-level management only.
 
-🎯 Real-World Use Cases
+Permissions:
 
-This system can be adapted for:
+View users list (read-only)
 
-Organization Admin Panels
+Create projects
 
-NGO Management Systems
+Manage projects they own
 
-School / Training Center Systems
+Assign staff members to their projects
 
-Hospital or Clinic Admin Panels
+View project details
 
-Small Business Management Tools
+Restrictions:
 
-📌 Why This Project Matters
+Cannot create/edit/delete users
 
-This project demonstrates:
+Cannot manage roles
 
-Real backend architecture (not tutorial-level)
+Cannot delete projects
 
-Clean Flask blueprint design
+3 Staff
 
-Practical database modeling
+Execution-level access.
 
-Admin dashboard UX patterns
+Permissions:
 
-Enterprise-ready foundation
+View assigned projects
 
-It reflects the type of system used in ERP platforms, internal tools, and admin dashboards.
+Update project status (limited)
 
-🧪 Skills Demonstrated
+Restrictions:
 
-Python & Flask
+Cannot view users list
 
-PostgreSQL
+Cannot manage users or roles
 
-SQLAlchemy ORM & Raw SQL
+Cannot create or delete projects
 
-MVC-style separation
+4 Viewer
 
-Frontend integration with jQuery
+Read-only access.
 
-Admin UI development
+Permissions:
 
-Data handling & validation
+View projects only
 
-📈 Future Enhancements
+Restrictions:
 
-Authentication & login system
+No create, edit, or delete permissions
 
-Permissions per role
+🔐 Authentication & Security
 
-Activity logging
+Authentication is handled using Flask-Login
 
-API endpoints
+Passwords are securely hashed
 
-Deployment with Docker
+CSRF protection is enabled for all forms
 
-Unit testing
+Backend permission checks are enforced using decorators
 
-👨‍💻 Author
+Frontend UI hides unauthorized actions for better user experience
 
-Built as part of an internship-level backend engineering project to demonstrate real-world Flask application development.
+Note: UI visibility does not replace backend security. All critical actions are protected server-side.
+
+
+🚀 Setup Instructions
+1 Clone or Extract the Project
+git clone <repository-url>
+cd taskplate
+
+2 Create a Virtual Environment
+python -m venv venv
+source venv/bin/activate   # Linux / Mac
+venv\Scripts\activate      # Windows
+
+3 Install Dependencies
+pip install -r requirements.txt
+
+
+
+Run Database Migrations (if applicable)
+flask db upgrade
+
+
+🌱 Initial Data (IMPORTANT)
+
+Since the application uses a local database, the system includes a seed script to create initial data.
+
+👉 Run the seed script:
+python seed.py
+
+
+This will create:
+
+An Admin role
+
+A default Admin user
+
+🔐 Default Admin Login
+Username: admin
+Password: admin123
+
+
+Running the Application
+python app.py
+
+Or:
+
+flask run
+
+
+Then open:
+
+http://127.0.0.1:5000
