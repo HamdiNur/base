@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+{% include "layouts/head.html" %}
+<body>
+<div class="main-wrapper">
+
+  {% include "layouts/header.html" %}
+  {% include "layouts/sidebar.html" %}
+
+  <div class="page-wrapper">
+    <div class="content container-fluid">
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <h3 class="page-title">My Profile</h3>
+        <ul class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('home') }}">Dashboard</a>
+          </li>
+          <li class="breadcrumb-item active">Profile</li>
+        </ul>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+
+          <div class="card">
+            <div class="card-body">
+<!-- 
+              <form id="profileForm">
+                {{ csrf_token() }} -->
+
+                <div class="form-group">
+                  <label>Username</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    value="{{ user.username }}"
+                    disabled
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Role</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    value="{{ user.role.name }}"
+                    disabled
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Full Name</label>
+                  <input
+                    type="text"
+                    name="full_name"
+                    class="form-control"
+                    value="{{ user.full_name }}"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    class="form-control"
+                    value="{{ user.email }}"
+                  />
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                  Save Changes
+                </button>
+              </form>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='assets/js/jquery-3.5.1.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$("#profileForm").on("submit", function(e){
+  e.preventDefault();
+
+  $.ajax({
+    url: "{{ url_for('user.profile') }}",
+    type: "POST",
+    data: $(this).serialize(),
+    success: function(res){
+      Swal.fire("Saved", res.message, "success");
+    },
+    error: function(){
+      Swal.fire("Error", "Update failed", "error");
+    }
+  });
+});
+</script>
+
+</body>
+</html>
