@@ -1,171 +1,144 @@
-🗂️ TaskPlate – Project & User Management System
-📌 Overview
+# 🗂️ TaskPlate – Project & User Management System
+
+## 📌 Overview
 
 TaskPlate is an internal role-based management system designed for organizations to manage:
 
-Users and roles
+- Users and roles
+- Projects and team members
+- Access control using permissions
 
-Projects and team members
-
-Access control using permissions
-
-The system ensures that each user can only see and perform actions allowed by their role.
+The system ensures that each user can only see and perform actions allowed by their assigned role.
 
 This project was developed as part of an internship learning program using Flask and Python, following real-world backend patterns.
 
-🛠️ Technologies Used
+---
 
-Backend: Flask (Python)
+## 🛠️ Technologies Used
 
-Database: PostgreSQL
+- **Backend:** Flask (Python)
+- **Database:** PostgreSQL
+- **ORM:** SQLAlchemy
+- **Authentication:** Flask-Login
+- **Forms & Security:** Flask-WTF (CSRF protection)
+- **Frontend:** Jinja2, Bootstrap
+- **AJAX & UI:** jQuery, DataTables, Select2, SweetAlert
 
-ORM: SQLAlchemy
+---
 
-Authentication: Flask-Login
+## 📁 Project Features
 
-Forms & Security: Flask-WTF (CSRF protection)
+- Secure login system
+- Role-based access control (RBAC)
+- User management (create, view, activate/deactivate)
+- Role management (admin-only)
+- Project creation and management
+- Assigning managers and project members
+- Server-side pagination and filtering
+- Clean and permission-aware UI
 
-Frontend: Jinja2, Bootstrap
+---
 
-AJAX & UI: jQuery, DataTables, Select2, SweetAlert
+## 👥 Roles & Permissions
 
-📁 Project Features
+The system uses predefined roles, each with a specific set of permissions.
 
-Secure login system
-
-Role-based access control (RBAC)
-
-User management (create, view, activate/deactivate)
-
-Role management (admin-only)
-
-Project creation and management
-
-Assigning managers and project members
-
-Server-side pagination and filtering
-
-Clean and permission-aware UI
-
-👥 Roles & Permissions
-
-The system uses roles, and each role has a specific set of permissions.
-
-🔑 Roles Overview
-1  Admin
-
-Full system access.
+### 🔑 Admin
+**Full system access**
 
 Permissions:
+- View dashboard
+- Manage users (create, edit, delete)
+- Manage roles
+- Create, edit, and delete projects
+- Assign managers and members
+- View all system data
 
-View dashboard
+---
 
-Manage users (create, edit, delete)
-
-Manage roles
-
-Create, edit, and delete projects
-
-Assign managers and members
-
-View all data in the system
-
-2  Manager
-
-Project-level management only.
+### 🔑 Manager
+**Project-level management**
 
 Permissions:
-
-View users list (read-only)
-
-Create projects
-
-Manage projects they own
-
-Assign staff members to their projects
-
-View project details
+- View users list (read-only)
+- Create projects
+- Manage projects they own
+- Assign staff members to their projects
+- View project details
 
 Restrictions:
+- Cannot manage users or roles
+- Cannot delete projects
 
-Cannot create/edit/delete users
+---
 
-Cannot manage roles
-
-Cannot delete projects
-
-3 Staff
-
-Execution-level access.
+### 🔑 Staff
+**Execution-level access**
 
 Permissions:
-
-View assigned projects
-
-Update project status (limited)
+- View assigned projects
+- Update project status (limited)
 
 Restrictions:
+- Cannot view users list
+- Cannot manage users or roles
+- Cannot create or delete projects
 
-Cannot view users list
+---
 
-Cannot manage users or roles
-
-Cannot create or delete projects
-
-4 Viewer
-
-Read-only access.
+### 🔑 Viewer
+**Read-only access**
 
 Permissions:
-
-View projects only
+- View projects only
 
 Restrictions:
+- No create, edit, or delete permissions
 
-No create, edit, or delete permissions
+---
 
-🔐 Authentication & Security
+## 🔐 Authentication & Security
 
-Authentication is handled using Flask-Login
+- Authentication is handled using **Flask-Login**
+- Passwords are securely hashed
+- CSRF protection is enabled for all forms
+- Backend permission checks are enforced using decorators
+- Frontend UI hides unauthorized actions for better user experience
 
-Passwords are securely hashed
+> **Note:** UI visibility does not replace backend security. All critical actions are protected server-side.
 
-CSRF protection is enabled for all forms
+---
 
-Backend permission checks are enforced using decorators
+## 🚀 Setup Instructions
+2️⃣ Create a Virtual Environment
+  python -m venv venv
+  Activate it:
 
-Frontend UI hides unauthorized actions for better user experience
+Linux / Mac
 
-Note: UI visibility does not replace backend security. All critical actions are protected server-side.
+source venv/bin/activate
 
 
-🚀 Setup Instructions
-1 Clone or Extract the Project
-git clone <repository-url>
-cd taskplate
+Windows
 
-2 Create a Virtual Environment
-python -m venv venv
-source venv/bin/activate   # Linux / Mac
-venv\Scripts\activate      # Windows
-
-3 Install Dependencies
+venv\Scripts\activate
+3️⃣ Install Dependencies
 pip install -r requirements.txt
 
+4️⃣ Configure Environment Variables
 
+Create a .env file based on .env.example and update the database credentials.
 
-Run Database Migrations (if applicable)
+5️⃣ Run Database Migrations
 flask db upgrade
-
 
 🌱 Initial Data (IMPORTANT)
 
-Since the application uses a local database, the system includes a seed script to create initial data.
+The project includes a seed script to create initial data.
 
-👉 Run the seed script:
+Run:
+
 python seed.py
-
-
 This will create:
 
 An Admin role
@@ -173,12 +146,14 @@ An Admin role
 A default Admin user
 
 🔐 Default Admin Login
+
 Username: admin
+
 Password: admin123
 
-
-Running the Application
+▶️ Running the Application
 python app.py
+
 
 Or:
 
@@ -188,3 +163,10 @@ flask run
 Then open:
 
 http://127.0.0.1:5000
+
+📌 Notes
+
+This project is intended for learning and evaluation purposes.
+
+Email integration and production deployment were intentionally kept out of scope.
+
