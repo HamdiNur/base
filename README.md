@@ -125,7 +125,7 @@ venv\Scripts\activate
 3️⃣ Install Dependencies
 pip install -r requirements.txt
 
-## 4️⃣ Configure Environment Variables
+## 4️⃣ Configure Environment Variables .
 
 Create a .env file based on .env.example and update the database credentials.
 
