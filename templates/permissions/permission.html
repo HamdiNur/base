@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head -->
+{% include 'layouts/head.html' %}
+<!-- /Head -->
+
+<body>
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+
+    <!-- Header -->
+    {% include 'layouts/header.html' %}
+    <!-- /Header -->
+
+    <!-- Sidebar -->
+    {% include 'layouts/sidebar.html' %}
+    <!-- /Sidebar -->
+
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+
+      <!-- Page Content -->
+      <div class="content container-fluid">
+
+        <!-- Page Header -->
+        <div class="page-header">
+          <div class="row align-items-center">
+            <div class="col">
+              <h3 class="page-title">Permissions</h3>
+            </div>
+
+            {% if has_permission(current_user, "manage_roles") %}
+            <div class="col-auto float-right ml-auto">
+              <button
+                class="btn add-btn"
+                data-toggle="modal"
+                data-target="#add_permission">
+                <i class="fa fa-plus"></i> Create Permission
+              </button>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- /Page Header -->
+
+        <!-- Permissions Table -->
+        <div class="row">
+          <div class="col-md-12">
+            <div class="table-responsive">
+              <table id="permissionsTable"
+                     class="table table-striped custom-table mb-0">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Code</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th class="text-center">Action</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- /Permissions Table -->
+
+      </div>
+      <!-- /Page Content -->
+
+    </div>
+    <!-- /Page Wrapper -->
+
+  </div>
+  <!-- /Main Wrapper -->
+
+  <!-- ADD PERMISSION MODAL -->
+  <div id="add_permission" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <form id="addPermissionForm"
+              method="POST"
+              action="{{ url_for('permission.add') }}">
+
+          {{ form.hidden_tag() }}
+
+          <div class="modal-header">
+            <h5 class="modal-title">Create Permission</h5>
+            <button type="button" class="close" data-dismiss="modal">
+              &times;
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="form-group">
+              {{ form.code.label }}
+              {{ form.code(class="form-control") }}
+            </div>
+
+            <div class="form-group">
+              {{ form.description.label }}
+              {{ form.description(class="form-control") }}
+            </div>
+
+            <div class="form-group">
+              <div class="status-toggle">
+                {{ form.is_active(class="check", id="perm_status") }}
+                <label for="perm_status" class="checktoggle">checkbox</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            {{ form.submit(class="btn btn-primary") }}
+            <button type="button"
+                    class="btn btn-secondary"
+                    data-dismiss="modal">
+              Cancel
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+  <!-- /ADD PERMISSION MODAL -->
+
+  <!-- JS -->
+  <script src="{{ url_for('static', filename='assets/js/jquery-3.5.1.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/bootstrap.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/jquery.slimscroll.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/select2.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/jquery.dataTables.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/dataTables.bootstrap4.min.js') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="{{ url_for('static', filename='assets/js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/permissions.js') }}"></script>
+
+</body>
+</html>
