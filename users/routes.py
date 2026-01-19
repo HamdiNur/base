@@ -1,6 +1,13 @@
 from flask import Blueprint, render_template, request, jsonify
 from sqlalchemy.exc import IntegrityError
 from auth.utils import generate_setup_token, hash_value
+from auth.policies import (
+    can_view_users,
+    can_create_user,
+    can_update_user,
+    can_delete_user,
+)
+from auth.policies import user_capabilities
 
 from extensions import db
 from users.models import User
@@ -9,33 +16,35 @@ from roles.models import Role
 from flask_login import login_required, current_user
 from flask import abort
 from auth.decorators import permission_required
+from auth.permissions import has_permission
 
 from extensions import login_manager
 
 user_bp = Blueprint("user", __name__, url_prefix="/user")
 
-def admin_only():
-    if not current_user.is_authenticated:
-        abort(401)
-    if current_user.role.name not in ["admin", "Super Admin"]:
-        abort(403)
+
 
 # =====================
 # USERS PAGE
 @user_bp.route("/")
 @login_required
-@permission_required("view_users")
+@permission_required("user_view")
 def index():
     form = UserForm()
-    
-    return render_template("user/user.html", form=form)
+    return render_template(
+        "user/user.html",
+        form=form,
+        can_create=can_create_user(current_user)
+    )
+
 # ADD USER (AJAX)
 
 @user_bp.route("/add", methods=["POST"])
 @login_required
-@permission_required("manage_users")
+@permission_required("user_view")
 def add():
-    admin_only()
+    if not can_create_user(current_user):
+        abort(403)
     form = UserForm()
 
 # 🔥 Fix Select2 + WTForms validation
@@ -80,83 +89,69 @@ def add():
 # =====================
 # EDIT USER PAGE
 # =====================
-
+# EDIT USER PAGE
+# =====================
 @user_bp.route("/edit/<int:user_id>", methods=["GET"])
 @login_required
-@permission_required("manage_users")
+@permission_required("user_view")
 def edit_page(user_id):
     user = User.query.get_or_404(user_id)
 
-    form = UserForm(obj=user)
-    # 🔥 DYNAMIC FORM TRIMMING
-    if current_user.role.name not in ["admin", "Super Admin"]:
-      del form.username
-      del form.role_id
-      del form.is_active
+    if not can_update_user(current_user, user):
+        abort(403)
 
+    form = UserForm(obj=user)
+
+    # ✅ ALWAYS SET CHOICES
     roles = Role.query.all()
     form.role_id.choices = [
-        (r.id, f"{r.name} (Inactive)" if not r.is_active else r.name)
-        for r in roles
+        (r.id, r.name) for r in roles
     ]
 
     return render_template(
         "user/user_edit.html",
         form=form,
-        data=user
-    )
+        data=user,
+        can_manage=has_permission(current_user, "manage_users")
 
-# =====================
-# EDIT USER (AJAX)
-# =====================
+    )
 @user_bp.route("/edit/<int:user_id>", methods=["POST"])
 @login_required
+@permission_required("user_view")
 def edit(user_id):
-    admin_only()
     user = User.query.get_or_404(user_id)
+
+    if not can_update_user(current_user, user):
+        abort(403)
+
     form = UserForm()
 
-# 🔥 SAME TRIMMING ON POST
-    if current_user.role.name not in ["admin", "Super Admin"]:
-       del form.username
-       del form.role_id
-       del form.is_active
-
+    # ✅ ALWAYS SET CHOICES BEFORE VALIDATION
     roles = Role.query.all()
     form.role_id.choices = [(r.id, r.name) for r in roles]
+    
+    # ✅ THIS IS THE KEY FIX
+    if not has_permission(current_user, "manage_users"):
+        del form.username
+        del form.role_id
+        del form.is_active
+
 
     if not form.validate_on_submit():
         return jsonify({"message": "Invalid form submission"}), 400
 
-    role = Role.query.get(form.role_id.data)
-    if not role or not role.is_active:
-        return jsonify({"message": "Selected role is inactive"}), 400
-
-   # always allowed
+    # ✅ Everyone allowed
     user.full_name = form.full_name.data
     user.email = form.email.data
 
-# only if field exists
-    if hasattr(form, "username"):
-       user.username = form.username.data
+    # 🔐 Admin-only
+    if has_permission(current_user, "manage_users"):
+        user.username = form.username.data
+        user.role_id = form.role_id.data
+        user.is_active = bool(form.is_active.data)
 
-    if hasattr(form, "role_id"):
-       role = Role.query.get(form.role_id.data)
-    if not role or not role.is_active:
-        return jsonify({"message": "Selected role is inactive"}), 400
-    user.role_id = form.role_id.data
-
-    if hasattr(form, "is_active"):
-       user.is_active = bool(form.is_active.data)
-
-
-    try:
-        db.session.commit()
-        return jsonify({"message": "User updated successfully"}), 200
-
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({"message": "Username or email already exists"}), 409
+    db.session.commit()
+    return jsonify({"message": "User updated successfully"}), 200
 
 
 # =====================
@@ -164,11 +159,13 @@ def edit(user_id):
 # =====================
 @user_bp.route("/delete/<int:user_id>", methods=["POST"])
 @login_required
-@permission_required("manage_users")
+@permission_required("user_view")
 def delete(user_id):
-    admin_only()
-
     user = User.query.get_or_404(user_id)
+
+    if not can_delete_user(current_user, user):
+        abort(403)
+
     db.session.delete(user)
     db.session.commit()
     return jsonify({"status": "success"})
@@ -178,6 +175,8 @@ def delete(user_id):
 # SELECT2 ROLE SEARCH
 # =====================
 @user_bp.route("/roles/search")
+@login_required
+@permission_required("user_view")
 def role_search():
     q = request.args.get("q", "")
 
@@ -201,79 +200,152 @@ def role_search():
 
 @user_bp.route("/datatable")
 @login_required
-@permission_required("view_users")
+@permission_required("user_view")
 def datatable():
-    draw = request.args.get("draw", type=int)
-    start = request.args.get("start", type=int)
-    length = request.args.get("length", type=int)
-    search = request.args.get("search[value]", "")
+
+    # =====================
+    # 1. DATATABLE PARAMS
+    # =====================
+    draw = request.args.get("draw", type=int, default=1)
+    start = request.args.get("start", type=int, default=0)
+    length = request.args.get("length", type=int, default=10)
+    search = request.args.get("search[value]", "").strip()
 
     status = request.args.get("status")
     role = request.args.get("role")
 
-    base_query = User.query.join(User.role)
-    query = base_query
+    # =====================
+    # 2. BASE QUERY
+    # =====================
+    query = User.query.outerjoin(Role)
 
-    # GLOBAL SEARCH
+    # =====================
+    # 3. GLOBAL SEARCH
+    # =====================
     if search:
         query = query.filter(
             db.or_(
                 User.username.ilike(f"%{search}%"),
                 User.full_name.ilike(f"%{search}%"),
                 User.email.ilike(f"%{search}%"),
-                Role.name.ilike(f"%{search}%")
+                Role.name.ilike(f"%{search}%"),
             )
         )
 
-    # STATUS FILTER
+    # =====================
+    # 4. STATUS FILTER
+    # =====================
     if status == "Active":
         query = query.filter(User.is_active.is_(True))
     elif status == "Inactive":
         query = query.filter(User.is_active.is_(False))
 
-    # ROLE FILTER
+    # =====================
+    # 5. ROLE FILTER
+    # =====================
     if role and role.isdigit():
         query = query.filter(User.role_id == int(role))
 
-    records_total = base_query.count()
+    # =====================
+    # 6. COUNTS (IMPORTANT)
+    # =====================
+    records_total = User.query.count()
     records_filtered = query.count()
 
+    # =====================
+    # 7. ORDERING
+    # =====================
+    order_col_index = request.args.get("order[0][column]", type=int)
+    order_dir = request.args.get("order[0][dir]", "asc")
+
+    columns = [
+        User.id,
+        User.username,
+        User.full_name,
+        User.email,
+        Role.name,
+    ]
+
+    if order_col_index is not None and order_col_index < len(columns):
+        col = columns[order_col_index]
+        if order_dir == "desc":
+            col = col.desc()
+        query = query.order_by(col)
+
+    # =====================
+    # 8. PAGINATION
+    # =====================
     users = query.offset(start).limit(length).all()
 
+    # =====================
+    # 9. BUILD RESPONSE DATA
+    # =====================
     data = []
+
     for u in users:
-        data.append([
-            u.id,
-            u.username,
-            u.full_name,
-            u.email,
-            u.role.name,
-            '<span class="badge bg-inverse-success">Active</span>'
-            if u.is_active else
-            '<span class="badge bg-inverse-danger">Inactive</span>',
-            f"""
+        caps = user_capabilities(current_user, u)
+
+        # ---- actions ----
+        actions = ""
+
+        if caps["can_edit"]:
+            actions += f"""
+            <a class="dropdown-item" href="/user/edit/{u.id}">
+                <i class="fa fa-pencil"></i> Edit
+            </a>
+            """
+
+        if caps["can_delete"]:
+            actions += f"""
+            <a href="javascript:void(0)"
+               class="dropdown-item delete-user"
+               data-id="{u.id}">
+                <i class="fa fa-trash-o"></i> Delete
+            </a>
+            """
+
+        action_html = ""
+        if actions:
+            action_html = f"""
             <div class="dropdown dropdown-action text-center">
-              <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown">
-                <i class="material-icons">more_vert</i>
-              </a>
-              <div class="dropdown-menu dropdown-menu-right">
-                <a class="dropdown-item" href="/user/edit/{u.id}">
-                  <i class="fa fa-pencil"></i> Edit
+                <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown">
+                    <i class="material-icons">more_vert</i>
                 </a>
-                <a href="javascript:void(0)" class="dropdown-item delete-user" data-id="{u.id}">
-                  <i class="fa fa-trash-o"></i> Delete
-                </a>
-              </div>
+                <div class="dropdown-menu dropdown-menu-right">
+                    {actions}
+                </div>
             </div>
             """
-        ])
 
+        # Status badge
+        status_html = (
+            '<span class="badge bg-inverse-success">Active</span>'
+            if u.is_active
+            else '<span class="badge bg-inverse-danger">Inactive</span>'
+        )
+
+
+        # ---- ALWAYS append row ----
+        data.append({
+            "id": u.id,
+            "username": u.username,
+            "full_name": u.full_name,
+            "email": u.email,
+            "role": u.role.name if u.role else "—",
+            "status": status_html,
+            "action": action_html,
+        })
+
+    # =====================
+    # 10. FINAL RESPONSE
+    # =====================
     return jsonify({
         "draw": draw,
         "recordsTotal": records_total,
         "recordsFiltered": records_filtered,
-        "data": data
+        "data": data,
     })
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
