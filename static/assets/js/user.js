@@ -19,10 +19,16 @@ if ($("#usersTable").length) {
     processing: true,
     serverSide: true,
     pageLength: 10,
-      columnDefs: CAN_MANAGE_USERS ? [] : [
-    { targets: -1, visible: false, searchable: false }
+      columns: [
+    { data: "id" },
+    { data: "username" },
+    { data: "full_name" },
+    { data: "email" },
+    { data: "role" },
+    { data: "status", orderable: false, searchable: false },
+    { data: "action", orderable: false, searchable: false }
   ],
-
+      
     dom:
       '<"row align-items-center mb-3"' +
       '<"col-md-3"l>' +
