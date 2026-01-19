@@ -113,6 +113,39 @@ $(document).ready(function () {
       });
     });
   });
+// =====================
+// UPDATE ROLE PERMISSIONS
+// =====================
+$("#rolePermissionsForm").on("submit", function (e) {
+  e.preventDefault();
+
+  $.ajax({
+    url: $(this).attr("action"),
+    type: "POST",
+    data: $(this).serialize(),
+    headers: { "X-CSRFToken": getCSRFToken() },
+
+    success: function (res) {
+      Swal.fire(
+        "Permissions Updated",
+        res.message || "Role permissions saved successfully",
+        "success"
+      );
+    },
+
+    error: function (xhr) {
+      let msg = "Failed to update permissions";
+
+      if (xhr.responseJSON && xhr.responseJSON.message) {
+        msg = xhr.responseJSON.message;
+      } else if (xhr.status === 403) {
+        msg = "You do not have permission to update role permissions";
+      }
+
+      Swal.fire("Error", msg, "error");
+    },
+  });
+});
 
   // =====================
   // DATATABLE
@@ -161,26 +194,34 @@ if ($("#rolesTable").length) {
   orderable: false,
   searchable: false,
   className: "text-right",
-  render: function (data, type, row) {
-    return `
-      <div class="dropdown dropdown-action">
-        <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown">
-          <i class="material-icons">more_vert</i>
+render: function (data, type, row) {
+  return `
+    <div class="dropdown dropdown-action">
+      <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown">
+        <i class="material-icons">more_vert</i>
+      </a>
+      <div class="dropdown-menu dropdown-menu-right">
+
+        <a class="dropdown-item" href="/roles/edit/${row.id}">
+          <i class="fa fa-pencil m-r-5"></i> Edit
         </a>
-        <div class="dropdown-menu dropdown-menu-right">
-          <a class="dropdown-item" href="/roles/edit/${row.id}">
-            <i class="fa fa-pencil m-r-5"></i> Edit
-          </a>
-          <button
-            type="button"
-            class="dropdown-item text-danger delete-role"
-            data-id="${row.id}">
-            <i class="fa fa-trash-o m-r-5"></i> Delete
-          </button>
-        </div>
+
+        <a class="dropdown-item" href="/roles/${row.id}/permissions">
+          <i class="fa fa-lock m-r-5"></i> Permissions
+        </a>
+
+        <button
+          type="button"
+          class="dropdown-item text-danger delete-role"
+          data-id="${row.id}">
+          <i class="fa fa-trash-o m-r-5"></i> Delete
+        </button>
+
       </div>
-    `;
-  }
+    </div>
+  `;
+}
+
 }
 
 
