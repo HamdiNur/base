@@ -11,28 +11,43 @@ from roles.models import Role
 from extensions import csrf
 from projects.members import ProjectMember
 from sqlalchemy.exc import IntegrityError
-
+from auth.decorators import permission_required
+from auth.permissions import has_permission
 from sqlalchemy import func
-
-def block_if_inactive(project):
-    if not project.is_active and current_user.role.code != "ADMIN":
-        abort(403)
-
-
+from auth.policies import (
+    can_view_project,
+    can_create_project,
+    can_update_project,
+    can_delete_project,
+    can_assign_project_members,
+    can_assign_project_manager,
+)
 @projects_bp.route("/")
+@login_required
+@permission_required("project_view")
 def index():
-    return render_template("projects/project.html")
-
+    return render_template(
+        "projects/project.html",
+        can_create_project=can_create_project(current_user)
+    )
 
 @projects_bp.route("/add", methods=["GET"])
-def create():
+@login_required
+@permission_required("project_create")
+def add_page():
+    if not can_create_project(current_user):
+     abort(403)
     form = ProjectForm()
     return render_template("projects/project_add.html", form=form)
+
+
+
 @projects_bp.route("/add", methods=["POST"])
 @login_required
+@permission_required("project_create")
 def add():
-    # 🔐 Only ADMIN or MANAGER can create projects
-    if current_user.role.code not in ["ADMIN", "MANAGER"]:
+    # 🔐 Policy check (context-free)
+    if not can_create_project(current_user):
         abort(403)
 
     form = ProjectForm()
@@ -40,36 +55,38 @@ def add():
     if not form.validate_on_submit():
         return jsonify({"message": "Invalid project data"}), 400
 
-    # 🚫 Duplicate project name check (case-insensitive)
-    existing_project = Project.query.filter(
+    # 🚫 Duplicate name check (case-insensitive)
+    exists = Project.query.filter(
         db.func.lower(Project.name) == form.name.data.strip().lower()
     ).first()
 
-    if existing_project:
+    if exists:
         return jsonify({
             "message": "A project with this name already exists"
         }), 409
 
-    # ✅ Create project
+    # ✅ Create project (NO AUTH LOGIC HERE)
     project = Project(
         name=form.name.data.strip(),
         description=form.description.data,
         is_active=True,
-        created_by=current_user.id,
-        manager_id=current_user.id if current_user.role.code == "MANAGER" else None
+        created_by=current_user.id
     )
 
     db.session.add(project)
-    db.session.flush()  # 🔥 ensures project.id exists
+    db.session.flush()  # ensure project.id exists
 
-    # ✅ Auto-add MANAGER as member
-    if current_user.role.code == "MANAGER":
+    # 🎯 Ownership / manager logic belongs to POLICY
+    # The policy may say: creator becomes manager
+    if can_assign_project_manager(current_user):
+        project.manager_id = current_user.id
+
+        # auto-add manager as member
         db.session.add(ProjectMember(
             project_id=project.id,
             user_id=current_user.id
         ))
 
-    # ✅ ONE commit only
     db.session.commit()
 
     return jsonify({
@@ -77,13 +94,13 @@ def add():
         "project_id": project.id
     }), 201
 
-
-
 @projects_bp.route("/edit/<int:project_id>", methods=["GET"])
 @login_required
 def edit_page(project_id):
     project = Project.query.get_or_404(project_id)
 
+    if not can_update_project(current_user, project):
+       abort(403)
     form = ProjectForm(obj=project)
 
     return render_template(
@@ -95,63 +112,40 @@ def edit_page(project_id):
 @login_required
 def edit(project_id):
     project = Project.query.get_or_404(project_id)
-    role = current_user.role.code
+
+    if not can_update_project(current_user, project):
+        abort(403)
 
     form = ProjectForm()
 
-    # 🔐 VIEWER → no edits
-    if role == "VIEWER":
-        return jsonify({
-            "message": "You only have permission to view projects."
-        }), 403
-
-    # 🔐 STAFF → ONLY toggle active/inactive
-    if role == "STAFF":
-        project.is_active = form.is_active.data
-        db.session.commit()
-
-        return jsonify({
-            "message": "Project status updated successfully"
-        }), 200
-
-    # 🔐 MANAGER → only own projects
-    if role == "MANAGER" and project.manager_id != current_user.id:
-        return jsonify({
-            "message": "You can only edit projects you manage."
-        }), 403
-
-    # 🔐 ADMIN / MANAGER → full validation
     if not form.validate_on_submit():
-        return jsonify({"message": "Invalid project data"}), 400
+        return jsonify({"message": "Invalid data"}), 400
 
     project.name = form.name.data.strip()
     project.description = form.description.data
     project.is_active = form.is_active.data
 
     db.session.commit()
-
-    return jsonify({
-        "message": "Project updated successfully"
-    }), 200
-
-
+    return jsonify({"message": "Updated"}), 200
 
 
 @projects_bp.route("/delete/<int:project_id>", methods=["POST"])
 @login_required
 @csrf.exempt
-
+@permission_required("project_delete")
 def delete(project_id):
     project = Project.query.get_or_404(project_id)
-    if current_user.role.code != "ADMIN":
-      return jsonify({
-        "message": "You do not have permission to delete projects. Please contact an administrator."
-    }), 403
+
+    if not can_delete_project(current_user, project):
+      abort(403)
+    project = Project.query.get_or_404(project_id)
 
     if project.is_active:
-      return jsonify({"message": "Only inactive projects can be deleted"
-}), 400
-     # 🚫 BLOCK if members exist
+        return jsonify({
+            "message": "Only inactive projects can be deleted"
+        }), 400
+
+    # 🚫 Block deletion if members exist
     has_members = ProjectMember.query.filter_by(
         project_id=project.id
     ).count() > 0
@@ -160,8 +154,6 @@ def delete(project_id):
         return jsonify({
             "message": "Remove all project members before deleting"
         }), 400
-
-
 
     db.session.delete(project)
     db.session.commit()
@@ -172,6 +164,7 @@ def delete(project_id):
 
 @projects_bp.route("/datatable")
 @login_required
+@permission_required("project_view")
 def datatable():
     draw = int(request.args.get("draw", 1))
     start = int(request.args.get("start", 0))
@@ -179,29 +172,23 @@ def datatable():
     search_value = request.args.get("search[value]", "").strip()
 
     base_query = (
-        db.session.query(
-            Project.id,
-            Project.name,
-            Project.is_active,
-            Project.created_at,
+        Project.query
+        .outerjoin(User, Project.manager_id == User.id)
+        .outerjoin(ProjectMember, ProjectMember.project_id == Project.id)
+        .add_columns(
             User.username.label("manager_name"),
             func.count(ProjectMember.user_id).label("members_count")
         )
-        .outerjoin(User, Project.manager_id == User.id)
-        .outerjoin(ProjectMember, ProjectMember.project_id == Project.id)
         .group_by(Project.id, User.username)
     )
 
-    # 🔍 SEARCH
     if search_value:
         base_query = base_query.filter(
             Project.name.ilike(f"%{search_value}%")
         )
 
-    # ✅ TOTAL RECORDS (NO GROUP)
     records_total = Project.query.count()
 
-    # ✅ FILTERED RECORDS (SUBQUERY FIX)
     records_filtered = db.session.query(func.count()).select_from(
         base_query.subquery()
     ).scalar()
@@ -215,15 +202,23 @@ def datatable():
     )
 
     data = []
-    for p in projects:
+
+    for project, manager_name, members_count in projects:
+        is_owner = project.manager_id == current_user.id
+
         data.append({
-            "id": p.id,
-            "name": p.name,
-            "manager": p.manager_name or "—",
-            "members": p.members_count,
-            "is_active": p.is_active,
-            "created_at": p.created_at.strftime("%Y-%m-%d")
-        })
+    "id": project.id,
+    "name": project.name,
+    "manager": manager_name or "—",
+    "members": members_count,
+    "is_active": project.is_active,
+    "created_at": project.created_at.strftime("%Y-%m-%d"),
+
+    # ✅ SINGLE SOURCE OF TRUTH
+    "can_edit": can_update_project(current_user, project),
+    "can_delete": can_delete_project(current_user, project),
+})
+
 
     return jsonify({
         "draw": draw,
@@ -232,8 +227,10 @@ def datatable():
         "data": data
     })
 
+
 @projects_bp.route("/<int:project_id>")
 @login_required
+@permission_required("project_view")
 def detail(project_id):
     project = Project.query.get_or_404(project_id)
 
@@ -249,41 +246,39 @@ def detail(project_id):
         project=project,
         members=members
     )
+
+
 @projects_bp.route("/<int:project_id>/assign-manager", methods=["POST"])
 @login_required
+@permission_required("assign_project_manager")
 def assign_manager(project_id):
-    # 🔐 Admin only
-    if current_user.role.code not in ["ADMIN", "MANAGER"]:
-        abort(403)
-
     project = Project.query.get_or_404(project_id)
-    block_if_inactive(project)
 
+    if not can_assign_project_manager(current_user):
+      abort(403)
 
     manager_id = request.form.get("manager_id")
-    if not manager_id:
-        return jsonify({"message": "Manager is required"}), 400
+
 
     manager = User.query.get(manager_id)
-
-    if not manager or manager.role.code != "MANAGER":
+    if not manager or not manager.is_active:
         return jsonify({"message": "Invalid manager"}), 400
+
 
     # ✅ Assign manager
     project.manager_id = manager.id
 
-    # ✅ AUTO-ADD MANAGER AS MEMBER (THIS IS WHAT WAS MISSING)
+    # ✅ Auto-add manager as member
     exists = ProjectMember.query.filter_by(
         project_id=project.id,
         user_id=manager.id
     ).first()
 
     if not exists:
-        member = ProjectMember(
+        db.session.add(ProjectMember(
             project_id=project.id,
             user_id=manager.id
-        )
-        db.session.add(member)
+        ))
 
     db.session.commit()
 
@@ -292,35 +287,33 @@ def assign_manager(project_id):
         "username": manager.username
     }), 200
 
-
 @projects_bp.route("/managers/select2")
 @login_required
+@permission_required("project_view")
 def managers_select2():
     q = request.args.get("q", "")
 
-    managers = (
+    users = (
         User.query
-        .join(Role, User.role_id == Role.id)
-        .filter(Role.code == "MANAGER")
+        .filter(User.is_active.is_(True))
         .filter(User.username.ilike(f"%{q}%"))
-        .limit(10)
         .all()
     )
 
-    return jsonify({
-        "results": [
-            {"id": u.id, "text": u.username}
-            for u in managers
-        ]
-    })
+    # only users who can manage projects
+    results = [
+        {"id": u.id, "text": u.username}
+        for u in users
+        if has_permission(u, "manage_own_projects")
+    ]
 
-
+    return jsonify({"results": results[:10]})
 @projects_bp.route("/<int:project_id>/members/select2")
 @login_required
+@permission_required("project_view")
 def members_select2(project_id):
     q = request.args.get("q", "")
 
-    # users already in project
     subquery = (
         db.session.query(ProjectMember.user_id)
         .filter(ProjectMember.project_id == project_id)
@@ -328,9 +321,7 @@ def members_select2(project_id):
 
     users = (
         User.query
-        .join(Role)
-        .filter(Role.code.notin_(["ADMIN", "SUPER_ADMIN"]))  # 🔥 FIX
-        .filter(User.is_active.is_(True))                    # ✅ optional but good
+        .filter(User.is_active.is_(True))
         .filter(User.username.ilike(f"%{q}%"))
         .filter(~User.id.in_(subquery))
         .limit(10)
@@ -348,29 +339,21 @@ def members_select2(project_id):
 @projects_bp.route("/<int:project_id>/members/add", methods=["POST"])
 @login_required
 @csrf.exempt
+@permission_required("project_view")
 def add_member(project_id):
     project = Project.query.get_or_404(project_id)
-    block_if_inactive(project)
 
-
-    # 🔐 Permission: ADMIN or Project Manager only
-    if not (
-        current_user.role.code == "ADMIN"
-        or project.manager_id == current_user.id
-    ):
+    if not can_assign_project_members(current_user, project):
         abort(403)
+    
 
     user_id = request.form.get("user_id")
     if not user_id:
         return jsonify({"message": "User required"}), 400
 
     user = User.query.get(user_id)
-    if not user:
+    if not user or not user.is_active:
         return jsonify({"message": "Invalid user"}), 400
-
-    # 🔒 SAFETY NET (admins should never reach here via UI)
-    if user.role.code in ["ADMIN", "SUPER_ADMIN"]:
-        abort(403)
 
     # 🚫 Prevent duplicates
     exists = ProjectMember.query.filter_by(
@@ -381,12 +364,10 @@ def add_member(project_id):
     if exists:
         return jsonify({"message": "User already a member"}), 409
 
-    member = ProjectMember(
+    db.session.add(ProjectMember(
         project_id=project.id,
         user_id=user.id
-    )
-
-    db.session.add(member)
+    ))
     db.session.commit()
 
     return jsonify({
@@ -394,20 +375,15 @@ def add_member(project_id):
         "username": user.username
     }), 201
 
-
 @projects_bp.route("/<int:project_id>/members/remove", methods=["POST"])
 @login_required
+@permission_required("project_view")
 def remove_member(project_id):
     project = Project.query.get_or_404(project_id)
-    block_if_inactive(project)
 
-
-    # 🔐 Permission: ADMIN or Project Manager
-    if not (
-        current_user.role.code == "ADMIN"
-        or project.manager_id == current_user.id
-    ):
+    if not can_assign_project_members(current_user, project):
         abort(403)
+
 
     user_id = request.form.get("user_id")
     if not user_id:
@@ -421,26 +397,28 @@ def remove_member(project_id):
     if not member:
         return jsonify({"message": "Member not found"}), 404
 
-    # 🚫 Optional safety: don't allow removing manager
+    # 🚫 Business rule: cannot remove manager
     if project.manager_id == int(user_id):
-        return jsonify({"message": "Cannot remove project manager"}), 400
+        return jsonify({
+            "message": "Cannot remove project manager"
+        }), 400
 
     db.session.delete(member)
     db.session.commit()
 
-    return jsonify({"message": "Member removed"}), 200
+    return jsonify({
+        "message": "Member removed successfully"
+    }), 200
+
 
 
 @projects_bp.route("/<int:project_id>/unassign-manager", methods=["POST"])
 @login_required
+@permission_required("assign_project_manager")
 def unassign_manager(project_id):
     project = Project.query.get_or_404(project_id)
 
-    # 🔐 Admin only
-    if current_user.role.code != "ADMIN":
-        abort(403)
-
-    # 🚫 Must be inactive
+    #  Must be inactive
     if project.is_active:
         return jsonify({
             "message": "Deactivate project before unassigning manager"
@@ -457,7 +435,6 @@ def unassign_manager(project_id):
         user_id=project.manager_id
     ).delete()
 
-    # unset manager
     project.manager_id = None
 
     db.session.commit()

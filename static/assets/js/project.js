@@ -44,30 +44,50 @@ $(document).ready(function () {
               : '<span class="badge badge-danger">Inactive</span>'
         },
         { data: "created_at" },
-        {
-          data: "id",
-          orderable: false,
-          searchable: false,
-          className: "text-right",
-          render: id => `
-            <div class="dropdown dropdown-action">
-              <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown">
-                <i class="material-icons">more_vert</i>
-              </a>
-              <div class="dropdown-menu dropdown-menu-right">
-                <a class="dropdown-item" href="/projects/${id}">
-                  <i class="fa fa-eye"></i> View
-                </a>
-                <a class="dropdown-item" href="/projects/edit/${id}">
-                  <i class="fa fa-pencil"></i> Edit
-                </a>
-                <button class="dropdown-item text-danger delete-project" data-id="${id}">
-                  <i class="fa fa-trash-o"></i> Delete
-                </button>
-              </div>
-            </div>
-          `
-        }
+
+    {
+  data: null,
+  orderable: false,
+  searchable: false,
+  className: "text-right",
+render: function (data, type, row) {
+
+  let actions = `
+    <a class="dropdown-item" href="/projects/${row.id}">
+      <i class="fa fa-eye"></i> View
+    </a>
+  `;
+
+  if (row.can_edit) {
+    actions += `
+      <a class="dropdown-item" href="/projects/edit/${row.id}">
+        <i class="fa fa-pencil"></i> Edit
+      </a>
+    `;
+  }
+
+  if (row.can_delete) {
+    actions += `
+      <button class="dropdown-item text-danger delete-project" data-id="${row.id}">
+        <i class="fa fa-trash-o"></i> Delete
+      </button>
+    `;
+  }
+
+  return `
+    <div class="dropdown dropdown-action">
+      <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown">
+        <i class="material-icons">more_vert</i>
+      </a>
+      <div class="dropdown-menu dropdown-menu-right">
+        ${actions}
+      </div>
+    </div>
+  `;
+}
+
+}
+
       ]
     });
   }
