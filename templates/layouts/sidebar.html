@@ -14,11 +14,11 @@
           </a>
 
           <ul style="display: none">
+            {% if has_permission(current_user, "view_dashboard") %}
             <li>
               <a href="{{ url_for('home') }}">Dashboard</a>
             </li>
-
-            {% if has_permission(current_user, "view_users") %}
+            {% endif %} {% if has_permission(current_user, "user_view") %}
             <li>
               <a href="{{ url_for('user.index') }}">Users</a>
             </li>
@@ -26,7 +26,16 @@
             <li>
               <a href="{{ url_for('role.index') }}">Roles</a>
             </li>
-            {% endif %} {% if has_permission(current_user, "create_projects") %}
+            {% endif %} {% if has_permission(current_user, "manage_roles") %}
+            <li>
+              <a href="{{ url_for('role.permissions_home') }}">
+                <i class="la la-key"></i>
+                <span>Role Permissions</span>
+              </a>
+            </li>
+            {% endif %} {% if has_permission(current_user, "project_view") or
+            has_permission(current_user, "project_create") or
+            has_permission(current_user, "project_update") %}
             <li>
               <a href="{{ url_for('projects.index') }}">Projects</a>
             </li>
