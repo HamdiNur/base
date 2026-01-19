@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+{% include 'layouts/head.html' %}
+<body>
+
+<div class="main-wrapper">
+
+  {% include 'layouts/header.html' %}
+  {% include 'layouts/sidebar.html' %}
+
+  <div class="page-wrapper">
+    <div class="content container-fluid">
+
+      <!-- ================= PAGE HEADER ================= -->
+      <div class="page-header">
+        <div class="row align-items-center">
+          <div class="col">
+            <h3 class="page-title">
+              Assign Permissions — {{ role.name }}
+            </h3>
+            <p class="text-muted mb-0">
+              {{ role.description or "No description provided for this role." }}
+            </p>
+          </div>
+          <div class="col-auto ml-auto">
+            <a href="{{ url_for('role.index') }}" class="btn btn-secondary">
+              ← Back to Roles
+            </a>
+          </div>
+        </div>
+      </div>
+      <div id="roleData"
+     data-role-id="{{ role.id }}"
+     data-role-name="{{ role.name }}">
+</div>
+
+      <!-- ================= ROLE SELECTOR ================= -->
+      {% if roles is defined %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <label class="font-weight-bold mb-1">Select Role</label>
+        <select id="roleSelect" class="form-control"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ================= ASSIGN PERMISSIONS FORM ================= -->
+      <form method="POST"
+            action="{{ url_for('role.role_permissions', role_id=role.id) }}">
+
+        <!-- CSRF -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- ================= DASHBOARD ================= -->
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Dashboard</h5>
+          </div>
+          <div class="card-body row">
+            {% for perm in permissions.dashboard %}
+              <div class="col-md-3 mb-2">
+                <div class="form-check">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         name="permissions[]"
+                         id="perm_{{ perm.id }}"
+                         value="{{ perm.id }}"
+                         {% if perm in role.permissions %}checked{% endif %}>
+                  <label class="form-check-label" for="perm_{{ perm.id }}">
+                    {{ perm.label }}
+                  </label>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- ================= PROJECTS ================= -->
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Projects</h5>
+          </div>
+          <div class="card-body row">
+            {% for perm in permissions.projects %}
+              <div class="col-md-3 mb-2">
+                <div class="form-check">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         name="permissions[]"
+                         id="perm_{{ perm.id }}"
+                         value="{{ perm.id }}"
+                         {% if perm in role.permissions %}checked{% endif %}>
+                  <label class="form-check-label" for="perm_{{ perm.id }}">
+                    {{ perm.label }}
+                  </label>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- ================= USERS ================= -->
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Users</h5>
+          </div>
+          <div class="card-body row">
+    {% for perm in permissions.users %}
+  {% if perm.code != "user_delete" %}
+    <div class="col-md-3 mb-2">
+      <div class="form-check">
+        <input class="form-check-input"
+               type="checkbox"
+               name="permissions[]"
+               id="perm_{{ perm.id }}"
+               value="{{ perm.id }}"
+               {% if perm in role.permissions %}checked{% endif %}>
+        <label class="form-check-label" for="perm_{{ perm.id }}">
+          {{ perm.label }}
+        </label>
+      </div>
+    </div>
+  {% endif %}
+{% endfor %}
+
+          </div>
+        </div>
+
+        <!-- ================= ROLES ================= -->
+   {% if role.name == "Admin" %}
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">Roles & Permissions</h5>
+  </div>
+  <div class="card-body row">
+    {% for perm in permissions.roles %}
+      <div class="col-md-3 mb-2">
+        <div class="form-check">
+          <input class="form-check-input"
+                 type="checkbox"
+                 name="permissions[]"
+                 value="{{ perm.id }}"
+                 {% if perm in role.permissions %}checked{% endif %}>
+          <label class="form-check-label">
+            {{ perm.label }}
+          </label>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+        <!-- ================= ACTION BUTTONS ================= -->
+        <div class="text-right mt-4">
+          <button type="submit" class="btn btn-primary">
+            Assign Permissions
+          </button>
+          <a href="{{ url_for('role.index') }}" class="btn btn-light">
+            Cancel
+          </a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>   <!-- jQuery -->
+    <script src="{{ url_for('static', filename='assets/js/jquery-3.5.1.min.js') }}"></script>
+
+    <!-- Bootstrap Core JS -->
+    <script src="{{ url_for('static', filename='assets/js/popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/bootstrap.min.js') }}"></script>
+
+    <!-- Slimscroll JS -->
+    <script src="{{ url_for('static', filename='assets/js/jquery.slimscroll.min.js') }}"></script>
+
+    <!-- Select2 JS -->
+    <script src="{{ url_for('static', filename='assets/js/select2.min.js') }}"></script>
+
+    <!-- Datetimepicker JS -->
+    <script src="{{ url_for('static', filename='assets/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/bootstrap-datetimepicker.min.js') }}"></script>
+
+    <!-- Custom JS -->
+
+    <script src="{{ url_for('static', filename='assets/js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/select2.min.js') }}"></script>
+
+    <script src="{{ url_for('static', filename='assets/js/dataTables.bootstrap4.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{{ url_for('static', filename='assets/js/role-permissions.js') }}"></script>
+
+
+</body>
+</html>
