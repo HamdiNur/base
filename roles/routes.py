@@ -10,24 +10,20 @@ from users.models import User
 from extensions import csrf
 from auth.decorators import permission_required
 from sqlalchemy.exc import IntegrityError
+from permissions.models import Permission
 
 role_bp = Blueprint('role', __name__, url_prefix='/roles')
 
-def admin_only():
-    if not current_user.is_authenticated:
-        abort(401)
-    if current_user.role.code != "ADMIN":
-        abort(403)
+
 
 # =========================
 # LIST ROLES
 # =========================
-@role_bp.route('/')
+@role_bp.route("/")
 @login_required
 @permission_required("manage_roles")
 def index():
-    return render_template('roles/role.html')
-# =========================
+    return render_template("roles/role.html")
 # CREATE ROLE (PAGE)
 # =========================
 @role_bp.route('/add', methods=['GET'])
@@ -78,18 +74,22 @@ def add():
 # =========================
 # EDIT ROLE (PAGE)
 # =========================
+
 @role_bp.route('/edit/<int:role_id>', methods=['GET'])
 @login_required
 @permission_required("manage_roles")
 def edit_page(role_id):
-
     role = Role.query.get_or_404(role_id)
+
     form = RoleForm(obj=role)
+
+    permissions = Permission.query.order_by(Permission.code).all()
 
     return render_template(
         'roles/role_edit.html',
         form=form,
-        role=role
+        role=role,
+        permissions=permissions
     )
 
 
@@ -132,13 +132,89 @@ def edit(role_id):
     return jsonify({"message": "Role updated successfully"}), 200
 
 # =========================
+# Assigning  ROLE PERMISSIONS
+# =========================
+@role_bp.route("/<int:role_id>/permissions", methods=["GET", "POST"])
+@login_required
+@permission_required("manage_roles")
+def role_permissions(role_id):
+    role = Role.query.get_or_404(role_id)
+
+    # =========================
+    # POST → ASSIGN PERMISSIONS
+    # =========================
+    if request.method == "POST":
+        permission_ids = request.form.getlist("permissions[]")
+
+        # 🚨 SAFETY: prevent accidental wipe
+        if not permission_ids:
+            return jsonify({
+                "message": "At least one permission must be selected"
+            }), 400
+
+        permissions = Permission.query.filter(
+            Permission.id.in_(permission_ids),
+            Permission.is_active.is_(True)
+        ).all()
+
+        role.permissions = permissions
+        db.session.commit()
+
+        return jsonify({
+            "message": "Permissions assigned successfully"
+        }), 200
+
+    # =========================
+    # GET → SHOW ASSIGN PAGE
+    # =========================
+    all_permissions = Permission.query.filter_by(is_active=True).all()
+
+    grouped = {
+        "projects": [],
+        "users": [],
+        "roles": [],
+        "dashboard": []
+    }
+
+    for perm in all_permissions:
+        code = perm.code or ""
+
+        # 🔹 PROJECT PERMISSIONS
+        if "project" in code:
+            grouped["projects"].append(perm)
+
+        # 🔹 USER PERMISSIONS
+        elif "user" in code:
+            grouped["users"].append(perm)
+
+        # 🔹 ROLE PERMISSIONS
+        elif "role" in code:
+            grouped["roles"].append(perm)
+
+        # 🔹 DASHBOARD
+        elif code == "view_dashboard":
+            grouped["dashboard"].append(perm)
+
+    # ✅ THIS IS THE KEY PHASE-3 FIX
+    assigned_permission_ids = {p.id for p in role.permissions}
+
+    roles = Role.query.filter_by(is_active=True).all()
+
+    return render_template(
+        "roles/role-permissions.html",
+        role=role,
+        roles=roles,
+        permissions=grouped,
+        assigned_permission_ids=assigned_permission_ids
+    )
+
+
 
 @role_bp.route('/delete/<int:role_id>', methods=['POST'])
 @login_required
 @csrf.exempt
-
+@permission_required("manage_roles")
 def delete(role_id):
-    admin_only()
 
     role = Role.query.get_or_404(role_id)
 
@@ -182,6 +258,8 @@ def roles_select2():
     })
 
 @role_bp.route("/datatable")
+@login_required
+@permission_required("manage_roles")
 def datatable():
     draw = int(request.args.get("draw", 1))
     start = int(request.args.get("start", 0))
@@ -227,3 +305,15 @@ def datatable():
         "recordsFiltered": filtered_records,
         "data": data
     })
+
+
+
+@role_bp.route("/permissions")
+@login_required
+@permission_required("manage_roles")
+def permissions_home():
+    roles = Role.query.filter_by(is_active=True).all()
+    return render_template(
+        "roles/permissions_home.html",
+        roles=roles
+    )
