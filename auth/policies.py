@@ -37,27 +37,26 @@ def can_create_user(user):
         or has_permission(user, "manage_users")
     )
 
+
 def can_update_user(actor, target_user):
     if not actor or not target_user:
         return False
 
-    # 🔑 Full authority
+    # 🔑 Admin = full power
     if has_permission(actor, "manage_users"):
         return True
 
-    # 🔒 Must at least be eligible
     if not has_permission(actor, "user_update"):
         return False
 
-    # 🚫 Cannot edit inactive users
     if not target_user.is_active:
         return False
 
-    # 🚫 Prevent privilege escalation
     if permission_score(target_user) > permission_score(actor):
         return False
 
     return True
+
 
 def can_delete_user(actor, target_user):
     if not actor or not target_user:
@@ -69,11 +68,11 @@ def can_delete_user(actor, target_user):
     if not has_permission(actor, "user_delete"):
         return False
 
-    # 🚫 Cannot delete higher-privilege users
     if permission_score(target_user) > permission_score(actor):
         return False
 
     return True
+
 
 
 # =========================
@@ -87,43 +86,42 @@ def can_view_project(user):
 def can_create_project(user):
     return has_permission(user, "project_create")
 
+def is_admin(user):
+    return user.role and user.role.name.lower() == "admin"
+
 def can_update_project(user, project):
     if not user or not project:
         return False
 
-    # 🔑 Admin / global editors
+    # 🔑 True admin bypass
+    if is_admin(user) or has_permission(user, "manage_projects"):
+        return True
+
     if has_permission(user, "project_update_all"):
         return True
 
-    # 👑 Manager can edit own project
-    if (
-        has_permission(user, "manage_own_projects")
-        and project.manager_id == user.id
-    ):
+    if has_permission(user, "manage_own_projects") and project.manager_id == user.id:
         return True
 
-    # 👤 Staff: can edit ONLY if assigned
     if has_permission(user, "project_update"):
-        from projects.members import ProjectMember  # 👈 LOCAL IMPORT
-
-        is_member = ProjectMember.query.filter_by(
+        from projects.members import ProjectMember
+        return ProjectMember.query.filter_by(
             project_id=project.id,
             user_id=user.id
-        ).first()
-
-        return is_member is not None
+        ).first() is not None
 
     return False
 
-
-
-
 def can_delete_project(user, project):
-    # Must have delete permission
+    if not user or not project:
+        return False
+
+    if is_admin(user) or has_permission(user, "manage_projects"):
+        return True
+
     if not has_permission(user, "project_delete"):
         return False
 
-    # ❌ Cannot delete active projects
     if project.is_active:
         return False
 
