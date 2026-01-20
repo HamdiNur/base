@@ -17,5 +17,6 @@ class User(db.Model, UserMixin):
 
     role_id = db.Column(db.Integer, db.ForeignKey("role.id"))
     is_active = db.Column(db.Boolean, default=True)
+    
 
     role = db.relationship("Role")
