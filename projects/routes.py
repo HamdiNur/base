@@ -1,5 +1,7 @@
 from flask import render_template, request, jsonify
 from extensions import db
+from auth.policies import is_admin
+
 from . import projects_bp
 from projects.models import Project
 from projects.forms import ProjectForm
@@ -132,7 +134,6 @@ def edit(project_id):
 @projects_bp.route("/delete/<int:project_id>", methods=["POST"])
 @login_required
 @csrf.exempt
-@permission_required("project_delete")
 def delete(project_id):
     project = Project.query.get_or_404(project_id)
 
@@ -287,12 +288,14 @@ def assign_manager(project_id):
         "username": manager.username
     }), 200
 
+
 @projects_bp.route("/managers/select2")
 @login_required
 @permission_required("project_view")
 def managers_select2():
     q = request.args.get("q", "")
 
+    # Base query: active users with username match
     users = (
         User.query
         .filter(User.is_active.is_(True))
@@ -300,12 +303,15 @@ def managers_select2():
         .all()
     )
 
-    # only users who can manage projects
-    results = [
-        {"id": u.id, "text": u.username}
-        for u in users
-        if has_permission(u, "manage_own_projects")
-    ]
+    results = []
+
+    for u in users:
+        # Only allow users with role 'Manager'
+        if u.role and u.role.name.lower() == "manager":
+            # Optional: If current user is a manager, exclude themselves
+            if not is_admin(current_user) and u.id == current_user.id:
+                continue
+            results.append({"id": u.id, "text": u.username})
 
     return jsonify({"results": results[:10]})
 @projects_bp.route("/<int:project_id>/members/select2")
@@ -314,27 +320,30 @@ def managers_select2():
 def members_select2(project_id):
     q = request.args.get("q", "")
 
+    # Users already in this project
     subquery = (
         db.session.query(ProjectMember.user_id)
         .filter(ProjectMember.project_id == project_id)
     )
 
+    # Base query: active users, username match, not already in project
     users = (
         User.query
         .filter(User.is_active.is_(True))
         .filter(User.username.ilike(f"%{q}%"))
         .filter(~User.id.in_(subquery))
-        .limit(10)
+        .limit(50)  # can adjust limit
         .all()
     )
 
-    return jsonify({
-        "results": [
-            {"id": u.id, "text": u.username}
-            for u in users
-        ]
-    })
+    results = []
 
+    for u in users:
+        # Exclude Admins and Managers
+        if u.role and u.role.name.lower() not in ("admin", "manager"):
+            results.append({"id": u.id, "text": u.username})
+
+    return jsonify({"results": results[:10]})
 
 @projects_bp.route("/<int:project_id>/members/add", methods=["POST"])
 @login_required
