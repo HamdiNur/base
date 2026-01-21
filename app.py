@@ -1,10 +1,8 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for,abort
 from flask_login import login_required, current_user
 from dotenv import load_dotenv
 import os
-from flask import abort
-
-from extensions import db, migrate, login_manager, csrf
+load_dotenv()
 from users.routes import user_bp
 from roles.routes import role_bp
 from projects import projects_bp
@@ -16,19 +14,20 @@ from users.models import User
 from roles.models import Role
 from projects.models import Project
 from auth.seed import seed_admin_permissions
+from config import Config
+from extensions import db, migrate, login_manager, csrf, mail
 
-load_dotenv()
+
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config.from_object(Config)
 
 # Init extensions
 db.init_app(app)
 migrate.init_app(app, db)
 login_manager.init_app(app)
 csrf.init_app(app)
+mail.init_app(app)
 
 # TEMP (remove later)
 with app.app_context():
@@ -36,7 +35,7 @@ with app.app_context():
     # seed_admin_permissions()
 
 # Register blueprints
-app.register_blueprint(auth_bp)
+app.register_blueprint(auth_bp, url_prefix="/auth")
 app.register_blueprint(user_bp)
 app.register_blueprint(role_bp)
 app.register_blueprint(projects_bp)
