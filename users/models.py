@@ -1,5 +1,7 @@
 from extensions import db
 from flask_login import UserMixin
+from datetime import datetime
+
 
 class User(db.Model, UserMixin):
     __tablename__ = "user"
@@ -13,6 +15,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(255))
 
     setup_token_hash = db.Column(db.String(255))
+    setup_token_created_at = db.Column(db.DateTime)
     must_set_password = db.Column(db.Boolean, default=True)
 
     role_id = db.Column(db.Integer, db.ForeignKey("role.id"))

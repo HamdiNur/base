@@ -1,24 +1,25 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, abort, current_app
 from sqlalchemy.exc import IntegrityError
-from auth.utils import generate_setup_token, hash_value
+from flask_login import login_required, current_user
+from datetime import datetime
+from auth.utils import generate_setup_token, hash_token
 from auth.policies import (
     can_view_users,
     can_create_user,
     can_update_user,
     can_delete_user,
+    user_capabilities
 )
-from auth.policies import user_capabilities
-
-from extensions import db
+from extensions import db, login_manager, mail
 from users.models import User
 from users.forms import UserForm
 from roles.models import Role
-from flask_login import login_required, current_user
-from flask import abort
 from auth.decorators import permission_required
 from auth.permissions import has_permission
+from auth.emails import send_setup_email
+from flask_mail import  Message
+from extensions import mail  # if you initialized Mail() in extensions.py
 
-from extensions import login_manager
 
 user_bp = Blueprint("user", __name__, url_prefix="/user")
 
@@ -45,50 +46,55 @@ def index():
 def add():
     if not can_create_user(current_user):
         abort(403)
+
     form = UserForm()
 
-# 🔥 Fix Select2 + WTForms validation
     if form.role_id.data:
-       form.role_id.choices = [(int(form.role_id.data), "temp")]
+        form.role_id.choices = [(int(form.role_id.data), "temp")]
 
     if not form.validate_on_submit():
-      print(form.errors)
-      return jsonify({"message": "Invalid form data"}), 400
+        return jsonify({"message": "Invalid form data"}), 400
 
     role = Role.query.get(int(form.role_id.data))
     if not role or not role.is_active:
-      return jsonify({"message": "Invalid role"}), 400
+        return jsonify({"message": "Invalid role"}), 400
 
-       # 🔐 Generate one-time setup token
     setup_token = generate_setup_token()
 
     user = User(
-      username=form.username.data,
-      full_name=form.full_name.data,
-      email=form.email.data,
-      role_id=form.role_id.data,
-      is_active=bool(form.is_active.data),
+        username=form.username.data,
+        full_name=form.full_name.data,
+        email=form.email.data,
+        role_id=form.role_id.data,
+        is_active=bool(form.is_active.data),
+        must_set_password=True,
+        setup_token_hash=hash_token(setup_token),
+        setup_token_created_at=datetime.utcnow(),
+    )
 
-    # 🔑 auth fields
-      must_set_password=True,
-      setup_token_hash=hash_value(setup_token)
-   )
+    db.session.add(user)
+    db.session.commit()
+
+    # After committing, send email
+    setup_link = f"{current_app.config['BASE_URL']}/auth/setup?token={setup_token}"
 
     try:
-        db.session.add(user)
-        db.session.commit()
-        return jsonify({
-                 "message": "User created successfully",
-                    "setup_token": setup_token
-                               }), 201
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({"message": "Username or email already exists"}), 409
+        msg = Message(
+            subject="Set your password",
+            recipients=[user.email],
+            html=f"""
+                <p>Hi {user.full_name},</p>
+                <p>Click the link below to set your password. The link expires in 24 hours.</p>
+                <p><a href="{setup_link}">Set Password</a></p>
+                <p>If you didn’t expect this email, please ignore it.</p>
+            """
+        )
+        mail.send(msg)
+    except Exception as e:
+        print("Email sending failed:", e)
 
+    return jsonify({"message": "User created successfully. Setup email sent."}), 201
 
-# =====================
-# EDIT USER PAGE
-# =====================
 # EDIT USER PAGE
 # =====================
 @user_bp.route("/edit/<int:user_id>", methods=["GET"])
