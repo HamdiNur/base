@@ -140,34 +140,18 @@ if ($("#usersTable").length) {
       type: "POST",
       data: $(this).serialize(),
       headers: { "X-CSRFToken": getCSRFToken() },
+success: function (res) {
+    Swal.fire({
+        title: "User Created",
+        text: "User created successfully. A setup email has been sent.",
+        icon: "success",
+        confirmButtonText: "OK"
+    });
 
-    success: function (res) {
-        let html = `
-    <p><strong>User created successfully.</strong></p>
-    <p>
-      <strong>Setup Token:</strong><br>
-      <code style="font-size:16px">${res.setup_token}</code>
-    </p>
-    <p>
-    The user will use this token to log in once and set their password.
-  </p>
-    <p class="text-danger">
-      ⚠️ Copy this token now. You will NOT see it again.
-    </p>
-  `;
-
-  Swal.fire({
-    title: "User Created",
-    html: html,
-    icon: "success",
-    confirmButtonText: "I have copied it"
-  });
-
-  $("#add_user").modal("hide");
-  $("#addUserForm")[0].reset();
-  usersTable.ajax.reload(null, false);
-}
-,
+    $("#add_user").modal("hide");
+    $("#addUserForm")[0].reset();
+    usersTable.ajax.reload(null, false);
+},
 
       error: function (xhr) {
         Swal.fire(
