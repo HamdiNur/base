@@ -1,173 +1,192 @@
-# 🗂️ TaskPlate – Project & User Management System
+🗂️ NGO – Project & User Management System
+📌 Overview
 
-## 📌 Overview
+NGO is a role-based management system designed to help organizations manage users, projects, and access control. It ensures that each user can only see and perform actions permitted by their role.
 
-TaskPlate is an internal role-based management system designed for organizations to manage:
+Originally developed as part of an internship program, NGO follows real-world backend patterns and emphasizes security, clean UI, and scalability.
 
-- Users and roles
-- Projects and team members
-- Access control using permissions
+🛠️ Technologies Used
 
-The system ensures that each user can only see and perform actions allowed by their assigned role.
+Backend: Flask (Python)
 
-This project was developed as part of an internship learning program using Flask and Python, following real-world backend patterns.
+Database: PostgreSQL
 
----
+ORM: SQLAlchemy
 
-## 🛠️ Technologies Used
+Authentication: Flask-Login
 
-- **Backend:** Flask (Python)
-- **Database:** PostgreSQL
-- **ORM:** SQLAlchemy
-- **Authentication:** Flask-Login
-- **Forms & Security:** Flask-WTF (CSRF protection)
-- **Frontend:** Jinja2, Bootstrap
-- **AJAX & UI:** jQuery, DataTables, Select2, SweetAlert
+Forms & Security: Flask-WTF (CSRF protection)
 
----
+Frontend: Jinja2, Bootstrap
 
-## 📁 Project Features
+AJAX & UI: jQuery, DataTables, Select2, SweetAlert
 
-- Secure login system
-- Role-based access control (RBAC)
-- User management (create, view, activate/deactivate)
-- Role management (admin-only)
-- Project creation and management
-- Assigning managers and project members
-- Server-side pagination and filtering
-- Clean and permission-aware UI
+📁 Key Features
 
----
+Secure Login & Authentication with hashed passwords
 
-## 👥 Roles & Permissions
+Role-Based Access Control (RBAC)
 
-The system uses predefined roles, each with a specific set of permissions.
+User Management: create, view, activate/deactivate users
 
-### 🔑 Admin
-**Full system access**
+Role Management: admin-only permissions
 
-Permissions:
-- View dashboard
-- Manage users (create, edit, delete)
-- Manage roles
-- Create, edit, and delete projects
-- Assign managers and members
-- View all system data
+Project Management: create, edit, delete projects
 
----
+Assign Managers & Members with flexible permissions
 
-### 🔑 Manager
-**Project-level management**
+Server-Side Pagination & Filtering for projects and users
+
+Dynamic UI that hides unauthorized actions
+
+AJAX-powered Search & Selection (Select2)
+
+Confirmation Modals for critical actions (SweetAlert)
+
+Activity Tracking & Audit Logs (new feature)
+
+Notifications & Alerts for project updates (new feature)
+
+Note: Frontend visibility is a UX enhancement. All critical actions are secured server-side.
+
+👥 Roles & Permissions
+
+The system uses predefined roles with different levels of access:
+
+🔑 Admin
+
+Full system access
 
 Permissions:
-- View users list (read-only)
-- Create projects
-- Manage projects they own
-- Assign staff members to their projects
-- View project details
+
+Manage users (create, edit, delete)
+
+Manage roles
+
+Create, edit, delete projects
+
+Assign managers & members
+
+View all system data
+
+🔑 Manager
+
+Project-level management
+
+Permissions:
+
+Create projects
+
+Manage projects they own
+
+Assign team members
+
+View project details
 
 Restrictions:
-- Cannot manage users or roles
-- Cannot delete projects
 
----
+Cannot manage users or roles
 
-### 🔑 Staff
-**Execution-level access**
+Cannot delete projects they don’t own
 
-Permissions:
-- View assigned projects
-- Update project status (limited)
+🔑 Staff
 
-Restrictions:
-- Cannot view users list
-- Cannot manage users or roles
-- Cannot create or delete projects
-
----
-
-### 🔑 Viewer
-**Read-only access**
+Execution-level access
 
 Permissions:
-- View projects only
+
+View assigned projects
+
+Update project status
 
 Restrictions:
-- No create, edit, or delete permissions
 
----
+Cannot view users list
 
-## 🔐 Authentication & Security
+Cannot manage roles or users
 
-- Authentication is handled using **Flask-Login**
-- Passwords are securely hashed
-- CSRF protection is enabled for all forms
-- Backend permission checks are enforced using decorators
-- Frontend UI hides unauthorized actions for better user experience
+Cannot create/delete projects
 
-> **Note:** UI visibility does not replace backend security. All critical actions are protected server-side.
+🔑 Viewer
 
----
+Read-only access
 
-## 🚀 Setup Instructions
-2️⃣ Create a Virtual Environment
-  python -m venv venv
-  Activate it:
+Permissions:
 
-Linux / Mac
+View projects
 
-source venv/bin/activate
+Restrictions:
+
+Cannot create, edit, or delete projects
+
+🔐 Authentication & Security
+
+Managed using Flask-Login
+
+Passwords securely hashed
+
+CSRF protection enabled for all forms
+
+Backend permission checks enforced with decorators
+
+Frontend dynamically hides unauthorized actions
+
+🚀 Setup Instructions
+
+1️⃣ Clone the repository
+
+git clone <repo_url>
+cd NGO
 
 
-Windows
+2️⃣ Create a virtual environment
 
-venv\Scripts\activate
-3️⃣ Install Dependencies
+python -m venv venv
+
+
+Activate it:
+
+Linux/Mac: source venv/bin/activate
+
+Windows: venv\Scripts\activate
+
+3️⃣ Install dependencies
+
 pip install -r requirements.txt
 
-## 4️⃣ Configure Environment Variables .
 
-Create a .env file based on .env.example and update the database credentials.
+4️⃣ Configure environment variables
+Create a .env file based on .env.example and update database credentials.
 
-5️⃣ Run Database Migrations
+5️⃣ Run database migrations
 
 flask db upgrade
 
-🌱 Initial Data (IMPORTANT)
 
-The project includes a seed script to create initial data.
-
-Run:
+6️⃣ Seed initial data
 
 python seed.py
+
+
 This will create:
 
 An Admin role
 
 A default Admin user
 
-🔐 Default Admin Login
+Default Admin Login:
 
 Username: admin
 
 Password: admin123
 
-▶️ Running the Application
+7️⃣ Run the application
+
 python app.py
 
-
-Or:
 
 flask run
 
 
-Then open:
-
+Open your browser:
 http://127.0.0.1:5000
-
-📌 Notes
-
-This project is intended for learning and evaluation purposes.
-
-Email integration and production deployment were intentionally kept out of scope.
-
